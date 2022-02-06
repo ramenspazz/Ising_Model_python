@@ -42,13 +42,14 @@ def rand_time() -> int:
 def main(*args, **kwargs) -> int:
     try:
         N = 20
-        M = 27
+        M = 30
         size = [N, M]
         lt_a = lt(1, size)
         lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
         lt_c = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
         lt_d = lt(1, size, [[0.128, np.e], [3.02398, -np.e]])
-
+        
+        # good seed 1644144314
         sys.stdout.write(
             '\nEnter 0 for seeded random or 1 for time based:\n')
 
@@ -57,21 +58,21 @@ def main(*args, **kwargs) -> int:
         if output == '0':
             # DOCtest seed = 1644121893
             seed = 1644121893
-            lt_a.randomize(0.5, seed, quiet=False)
-            lt_b.randomize(0.25, seed)
-            lt_c.randomize(0.27, seed)
-            lt_d.randomize(0.27, seed)
+            lt_a.randomize(True, probs=[0.49, 0.56], rand_seed=seed, quiet=False)
+            lt_b.randomize(False, rand_seed=seed)
+            lt_c.randomize(False, rand_seed=seed)
+            lt_d.randomize(False, rand_seed=seed)
 
         else:
-            lt_a.randomize(random(), rand_time(), False)
-            lt_b.randomize(random(), rand_time(), False)
-            lt_c.randomize(random(), rand_time(), False)
-            lt_d.randomize(random(), rand_time(), False)
+            lt_a.randomize(True, probs=[0.49, 0.56], rand_seed=rand_time(), quiet=False)
+            lt_b.randomize(False, rand_seed=rand_time, quiet=False)
+            lt_c.randomize(False, rand_seed=rand_time, quiet=False)
+            lt_d.randomize(False, rand_seed=rand_time, quiet=False)
 
         lt_a.display()
-        lt_b.display()
-        lt_c.display()
-        lt_d.display()
+        # lt_b.display()
+        # lt_c.display()
+        # lt_d.display()
 
         # BJs = np.arange(0.1, 2, 0.05)
         total_time = 1000
@@ -79,12 +80,12 @@ def main(*args, **kwargs) -> int:
 
         SE_mtx = lt_a.metropolis(total_time, BJ)
         plot_metrop(SE_mtx, BJ, size)
-        SE_mtx = lt_b.metropolis(total_time, BJ)
-        plot_metrop(SE_mtx, BJ, size)
-        SE_mtx = lt_c.metropolis(total_time, BJ)
-        plot_metrop(SE_mtx, BJ, size)
-        SE_mtx = lt_d.metropolis(total_time, BJ)
-        plot_metrop(SE_mtx, BJ, size)
+        # SE_mtx = lt_b.metropolis(total_time, BJ)
+        # plot_metrop(SE_mtx, BJ, size)
+        # SE_mtx = lt_c.metropolis(total_time, BJ)
+        # plot_metrop(SE_mtx, BJ, size)
+        # SE_mtx = lt_d.metropolis(total_time, BJ)
+        # plot_metrop(SE_mtx, BJ, size)
 
         return(0)
 
