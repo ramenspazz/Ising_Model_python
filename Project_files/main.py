@@ -50,7 +50,7 @@ def main(*args, **kwargs) -> int:
         lt_d = lt(1, size, [[0.128, np.e], [3.02398, -np.e]])
 
         sys.stdout.write(
-            'Enter 0 for seeded random or 1 for time based:\n')
+            '\nEnter 0 for seeded random or 1 for time based:\n')
 
         output: str = inF.key_input(['0', '1'])
 
