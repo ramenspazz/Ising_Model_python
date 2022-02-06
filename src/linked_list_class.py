@@ -473,8 +473,12 @@ class LinkedLattice:
         """
         visited.append(_node)
         neighbors = _node.get_connected()
-        for neighbor in neighbors:
-            spin_sum += neighbor.get_spin()
+        if not _node.get_spin() == 0:
+            for neighbor in neighbors:
+                temp = neighbor.get_spin()
+                if temp == 0:
+                    continue
+                spin_sum += neighbor.get_spin()
         for neighbor in neighbors:
             if neighbor not in visited:
                 visited.append(neighbor)

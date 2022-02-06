@@ -257,16 +257,25 @@ class lattice_class:
                     sys.stdout.write(f"Generating Seed = {rand_seed}\n")
                 random.seed(rand_seed)
                 for i in range(self.__shape[0]):
-                    for j in range(self.__shape[1]):
-                        cond = random.gauss(0.5, 0.25)
-                        if cond >= 0 and cond < probs[0]:
-                            rand_num = -1
-                        elif cond >= probs[0] and cond <= probs[1]:
-                            rand_num = 0
-                        else:
-                            rand_num = 1
-                        rand_num = randint(0,2) - 1
-                        self[i, j] = rand_num
+                    if voids is True:
+                        for j in range(self.__shape[1]):
+                            cond = random.gauss(0.5, 0.25)
+                            if cond >= 0 and cond < probs[0]:
+                                rand_num = -1
+                            elif cond >= probs[0] and cond <= probs[1]:
+                                rand_num = 0
+                            else:
+                                rand_num = 1
+                            rand_num = randint(0,2) - 1
+                            self[i, j] = rand_num
+                    elif voids is False:
+                        for j in range(self.__shape[1]):
+                            cond = random.gauss(0.5, 0.25)
+                            if cond >= probs[0]:
+                                rand_num = -1
+                            else:
+                                rand_num = 1
+                            self[i, j] = rand_num
             return(None)
         except Exception:
             PE.PrintException()
