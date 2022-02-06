@@ -41,8 +41,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 20# noqa E402
-        M = 9
+        N = 20
+        M = 27
         size = [N, M]
         lt_a = lt(1, size)
         lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
