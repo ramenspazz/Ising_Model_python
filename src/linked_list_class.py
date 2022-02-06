@@ -1,4 +1,6 @@
 """
+Author: Ramenspazz
+
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
@@ -230,9 +232,9 @@ class Node:
         return(len(self.links))
 
     def get_coords(self,
-    ReturnString: Optional[bool] = None) -> NDArray[number]:  # noqa E128
+    ReturnString: Optional[bool] = None) -> list[number | Number] | str:  # noqa E128
         if ReturnString is None:
-            return(self.coords)
+            return(self.coords.tolist())
         elif ReturnString is True:
             return(StripString(self.coords, r_str))
 

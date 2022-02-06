@@ -5,3 +5,4 @@ Uses the env_export file provided to install the enviroment VIA anaconda using t
 ```BASH
 conda env create -f env_export.yml
 ```
+

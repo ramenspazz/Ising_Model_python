@@ -1,8 +1,4 @@
-# Files
-main.py is the commandline script file.
-
-Ising_notebook.ipynb is the jupyter notebook file.
-
-path_setup.py is a file that allows you to load out of directory
-modules into a python file or a jupyter notebook by placing the
-directory of the files on the system path.
+# Using Jupyter notebooks with python modules
+If you are using a Jupyter notebook (ipynb extenstion), you can place them in the ipynb_files directory for easy project management and organization.
+# WARNING
+Jupyter notebooks as ran by the jupyter notebook service themselves are clunky and do not allow external files without a lot of finaggling, so I recommend using visual studio code.

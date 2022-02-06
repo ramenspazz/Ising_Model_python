@@ -1,5 +1,7 @@
 """
-This file is the entry point for the project
+Author: Ramenspazz
+
+Purpose: main driver file for ISING model simulation
 """
 # Begin by importing external libraries using path_setup
 # NOTE : Must be ran first, thus PEP8-E402
@@ -13,12 +15,33 @@ from LatticeClass_F import lattice_class as lt # noqa E402
 import PrintException as PE  # noqa E402
 import input_funcs as inF  # noqa E402
 from random import random  # noqa E402
+import Data_Analysis as DA
 
 
 def plot_metrop(SE_mtx, BJ, size):
+    spin_up = 0
+    spin_dn = 0
+    spin0 = 0
+    for val in SE_mtx[:,0]:
+        if val > 0:
+            spin_up += val
+        elif val == 0:
+            spin0 += 1
+        elif val < 0:
+            spin_dn += val
+    total = np.abs(spin_up)+np.abs(spin_dn)
+    sq_tot = np.abs(spin_up)**2+np.abs(spin_dn)**2
+    mean = DA.data_mean(SE_mtx[:, 0])
+    stdev = DA.std_dev(SE_mtx[:, 0], mean, sample=False)
+    print(f"""
+    The percent of time spent spin up on average is {np.abs(spin_up) / (size[0]*size[1])}\%\n
+    The percent of time spent spin dn on average is {np.abs(spin_dn) / (size[0]*size[1])}\%\n
+    The mean is {mean}\n
+    The Standard deviation of the mean is {stdev / np.sqrt(mean)}\n
+    """)
     fig, axes = plt.subplots(
         1, 2, figsize=(12, 4),
-        num=f'Evolution of Average Spin and Energy for BJ={BJ}')
+        num=f'Evolution of Average Spin n={(size[0]*size[1])**2} and Energy for BJ={BJ}')
     ax = axes[0]
     ax.plot(SE_mtx[:, 0] / (size[0]*size[1]))
     ax.set_xlabel('Time Steps')
@@ -41,8 +64,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 25
-        M = 15
+        N = 8
+        M = 8
         size = [N, M]
         lt_a = lt(1, size)
         lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
@@ -55,13 +78,13 @@ def main(*args, **kwargs) -> int:
 
         output: str = inF.key_input(['0', '1'])
 
-                if output == '0':
+        if output == '0':
             # DOCtest seed = 1644121893
             seed = 1644121893
             lt_a.randomize(voids=True , probs=[0.49, 0.56], rand_seed=seed, quiet=False)
-            lt_b.randomize(voids=False, probs=[0.56], rand_seed=seed)
-            lt_c.randomize(voids=False, probs=[0.56], rand_seed=seed)
-            lt_d.randomize(voids=False, probs=[0.56], rand_seed=seed)
+            lt_b.randomize(voids=False, probs=[0.75], rand_seed=seed)
+            lt_c.randomize(voids=False, probs=[1-0.75], rand_seed=seed)
+            lt_d.randomize(voids=False, probs=[1-0.75], rand_seed=seed)
 
         else:
             lt_a.randomize(voids=True , probs=[0.49, 0.56], rand_seed=rand_time(), quiet=False)
@@ -69,14 +92,14 @@ def main(*args, **kwargs) -> int:
             lt_c.randomize(voids=False, probs=[0.49], rand_seed=rand_time(), quiet=False)
             lt_d.randomize(voids=False, probs=[0.49], rand_seed=rand_time(), quiet=False)
 
-        lt_a.display()
-        lt_b.display()
-        lt_c.display()
-        lt_d.display()
+        # lt_a.display()
+        # lt_b.display()
+        # lt_c.display()
+        # lt_d.display()
 
         # BJs = np.arange(0.1, 2, 0.05)
-        total_time = 1000
-        BJ = 0.1
+        total_time = (N*M)**2
+        BJ = -10
 
         SE_mtx = lt_a.metropolis(total_time, BJ)
         plot_metrop(SE_mtx, BJ, size)

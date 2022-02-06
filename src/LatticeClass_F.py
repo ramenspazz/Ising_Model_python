@@ -1,4 +1,6 @@
 '''
+Author: Ramenspazz
+
 This file defines the simulation lattice to be used and sets up basic methods
 to operate on the lattice
 '''
@@ -14,6 +16,7 @@ import numpy as np
 from numpy import array
 import matplotlib.pyplot as plt
 import matplotlib.colors as mpc
+from matplotlib.colors import BoundaryNorm
 from matplotlib import cm # noqa E402
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from scipy import rand # noqa E402
@@ -23,7 +26,6 @@ import linked_list_class as lc
 import random
 from random import randint
 import PrintException as PE
-
 
 GNum = Union[number, Number]
 
@@ -133,16 +135,15 @@ class lattice_class:
             spin states of the lattice nodes.
         """
         try:
-            U = list()
-            V = list()
+            coords = list()
             W = list()
             for i in range(self.__shape[0]):
                 for j in range(self.__shape[1]):
-                    coord = self[i, j].get_coords()
-                    U.append(coord[0])
-                    V.append(coord[1])
-                    W.append(self[i, j].get_spin())
-            plt.scatter(U, V, c=W, cmap='viridis')
+                    cur = self[i, j]
+                    coords.append([cur.get_coords(), 0])
+                    coords[i+j][1] = cur.get_spin()
+            plt.scatter(coords[:][0], coords[:][1],
+                c=coords[1], cmap='viridis')
             plt.show()
         except Exception:
             PE.PrintException()
@@ -223,7 +224,8 @@ class lattice_class:
                 elif dE <= 0:
                     self.internal_arr[rand_x, rand_y].flip_spin()
                     energy += dE
-
+                if i % 100 == 0:
+                    self.display()
                 SE_mtx[i, 0] = self.internal_arr.Sum()
                 SE_mtx[i, 1] = energy
             del energy
