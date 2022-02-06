@@ -1,2 +1,3 @@
-# Using Jupyter notebooks with python modules
-If you are using a Jupyter notebook (ipynb extenstion), you can place them in the ipynb_files directory for easy project management and organization.
+# Files
+main.py is the commandline script file
+Ising_notebook.ipynb is the jupyter notebook file
