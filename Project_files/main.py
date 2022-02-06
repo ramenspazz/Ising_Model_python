@@ -41,8 +41,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 8
-        M = 8
+        N = 25
+        M = 15
         size = [N, M]
         lt_a = lt(1, size)
         lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
