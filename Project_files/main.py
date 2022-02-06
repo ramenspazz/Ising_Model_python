@@ -41,8 +41,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 20
-        M = 30
+        N = 8
+        M = 8
         size = [N, M]
         lt_a = lt(1, size)
         lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
@@ -58,16 +58,16 @@ def main(*args, **kwargs) -> int:
         if output == '0':
             # DOCtest seed = 1644121893
             seed = 1644121893
-            lt_a.randomize(True, probs=[0.49, 0.56], rand_seed=seed, quiet=False)
-            lt_b.randomize(False, rand_seed=seed)
-            lt_c.randomize(False, rand_seed=seed)
-            lt_d.randomize(False, rand_seed=seed)
+            lt_a.randomize(True , probs=[0.49, 0.56], rand_seed=seed, quiet=False)
+            lt_b.randomize(False, probs=[0.56], rand_seed=seed)
+            lt_c.randomize(False, probs=[0.56], rand_seed=seed)
+            lt_d.randomize(False, probs=[0.56], rand_seed=seed)
 
         else:
-            lt_a.randomize(True, probs=[0.49, 0.56], rand_seed=rand_time(), quiet=False)
-            lt_b.randomize(False, rand_seed=rand_time, quiet=False)
-            lt_c.randomize(False, rand_seed=rand_time, quiet=False)
-            lt_d.randomize(False, rand_seed=rand_time, quiet=False)
+            lt_a.randomize(True , probs=[0.49, 0.56], rand_seed=rand_time(), quiet=False)
+            lt_b.randomize(False, probs=[0.49], rand_seed=rand_time(), quiet=False)
+            lt_c.randomize(False, probs=[0.49], rand_seed=rand_time(), quiet=False)
+            lt_d.randomize(False, probs=[0.49], rand_seed=rand_time(), quiet=False)
 
         lt_a.display()
         lt_b.display()
