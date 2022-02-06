@@ -13,12 +13,17 @@ import sys # noqa
 import numpy as np
 from numpy import array
 import matplotlib.pyplot as plt
+import matplotlib.colors as mpc
+from matplotlib import cm # noqa E402
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from scipy import rand # noqa E402
 from scipy.ndimage import convolve, generate_binary_structure # noqa
 from scipy.interpolate import griddata # noqa
 import linked_list_class as lc
 import random
 from random import randint
 import PrintException as PE
+
 
 GNum = Union[number, Number]
 
@@ -137,7 +142,7 @@ class lattice_class:
                     U.append(coord[0])
                     V.append(coord[1])
                     W.append(self[i, j].get_spin())
-            plt.scatter(U, V, c=W)
+            plt.scatter(U, V, c=W, cmap='viridis')
             plt.show()
         except Exception:
             PE.PrintException()
@@ -226,19 +231,22 @@ class lattice_class:
         except Exception:
             PE.PrintException()
 
-    def randomize(
-        self, rand_condition: float,
+    def randomize(self,
+        voids: bool,
+        probs: list,
         rand_seed: Optional[int] = None,
         quiet: Optional[bool] = True) -> None: # noqa E125
         """
-            Purpose
-            -------
-            TODO
-
             Parameters
             ----------
-            rand_condition : `float`
-                - Number representing the probability of `1` or `-1`.
+            voids : `bool`
+                - Truns on random voids in the lattice
+
+            probs : `list`[`float`]
+                - list representing the probability of `1`, `0`, `-1`
+                where the two entries represent the two bounds such that
+                if 0 < rand < a then spin = -1, if a <= rand <= b then spin = 0,
+                else spin = 1.
 
             rand_seed : Optional[`int`]
                 - Seed value to seed random with.
@@ -250,9 +258,15 @@ class lattice_class:
                 random.seed(rand_seed)
                 for i in range(self.__shape[0]):
                     for j in range(self.__shape[1]):
-                        rand_num = 1 if random.gauss(
-                            0.5, 0.5) >= rand_condition else -1
-                        self.internal_arr[i, j] = rand_num
+                        cond = random.gauss(0.5, 0.25)
+                        if cond >= 0 and cond < probs[0]:
+                            rand_num = -1
+                        elif cond >= probs[0] and cond <= probs[1]:
+                            rand_num = 0
+                        else:
+                            rand_num = 1
+                        rand_num = randint(0,2) - 1
+                        self[i, j] = rand_num
             return(None)
         except Exception:
             PE.PrintException()
@@ -260,13 +274,3 @@ class lattice_class:
     def shape(self) -> tuple:
         return(self.__shape)
 
-# lc_test = lattice_class(1, [10, 10], [[1, 0], [0.5, np.sqrt(3)/2]])
-# lc_test = lattice_class(1, [10, 10], [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]]) # noqa
-
-# lc_test.randomize(0.64)
-# # lc_test.display()
-# for item in lc_test:
-#     if item is None:
-#         continue
-#     else:
-#         print(item.coords)
