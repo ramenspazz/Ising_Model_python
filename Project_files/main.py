@@ -70,9 +70,9 @@ def main(*args, **kwargs) -> int:
             lt_d.randomize(False, rand_seed=rand_time, quiet=False)
 
         lt_a.display()
-        # lt_b.display()
-        # lt_c.display()
-        # lt_d.display()
+        lt_b.display()
+        lt_c.display()
+        lt_d.display()
 
         # BJs = np.arange(0.1, 2, 0.05)
         total_time = 1000
@@ -80,12 +80,12 @@ def main(*args, **kwargs) -> int:
 
         SE_mtx = lt_a.metropolis(total_time, BJ)
         plot_metrop(SE_mtx, BJ, size)
-        # SE_mtx = lt_b.metropolis(total_time, BJ)
-        # plot_metrop(SE_mtx, BJ, size)
-        # SE_mtx = lt_c.metropolis(total_time, BJ)
-        # plot_metrop(SE_mtx, BJ, size)
-        # SE_mtx = lt_d.metropolis(total_time, BJ)
-        # plot_metrop(SE_mtx, BJ, size)
+        SE_mtx = lt_b.metropolis(total_time, BJ)
+        plot_metrop(SE_mtx, BJ, size)
+        SE_mtx = lt_c.metropolis(total_time, BJ)
+        plot_metrop(SE_mtx, BJ, size)
+        SE_mtx = lt_d.metropolis(total_time, BJ)
+        plot_metrop(SE_mtx, BJ, size)
 
         return(0)
 
