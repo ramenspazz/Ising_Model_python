@@ -15,7 +15,8 @@ from LatticeClass_F import lattice_class as lt # noqa E402
 import PrintException as PE  # noqa E402
 import input_funcs as inF  # noqa E402
 from random import random  # noqa E402
-sys.setrecursionlimit(1000000)
+import Data_Analysis as DA  # noqa E402
+sys.setrecursionlimit(1000000)  # increase recursion limit
 
 
 def plot_metrop(num_nodes, SE_mtx, BJ, size):

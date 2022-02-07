@@ -33,10 +33,8 @@ GNum = Union[number, Number]
 
 def isnotebook():
     try:
-        print('\n\nIS IT?!?!?!?!?!?\n\n')
-        shell = get_ipython().__class__.__name__
+        shell = get_ipython().__class__.__name__  # noqa 
         if shell == 'ZMQInteractiveShell':
-            print('\nYES I LOVE TITTES\n')
             return True   # Jupyter notebook or qtconsole
         elif shell == 'TerminalInteractiveShell':
             return False  # Terminal running IPython
@@ -195,7 +193,7 @@ class lattice_class:
             SE_mtx = self.metropolis(times, bj)
             spins = SE_mtx[:, 0]
             energies = SE_mtx[:, 1]
-            ms[i] = spins[-times:].mean()/(self.Lshape[0]*self.Lshape[1])
+            ms[i] = spins[-times:].mean()/len(self.internal_arr)
             E_means[i] = energies[-times:].mean()
             E_stds[i] = energies[-times:].std()
             sys.stdout.write(f"get_spin_energy is {100 * i / len(BJs) :.2f}% complete...       \r")
@@ -208,7 +206,7 @@ class lattice_class:
     def plot_spin_energy(self, bjs: ndarray, a: ndarray | list, c: ndarray | list) -> None:
 
         fig, (ax1, ax2) = plt.subplots(1, 2)
-        ax1.plot(1/bjs, a, 'o--', label=r"<T> vs $\left(\frac{k}{J}\right)T$")
+        ax1.plot(1/bjs, a, 'o--', label=r"<m> vs $\left(\frac{k}{J}\right)T$")
         ax1.legend()
         ax2.plot(1/bjs, c*bjs, 'x--', label=r'$C_V / k^2$ vs $\left(\frac{k}{J}\right)T$')
         ax2.legend()
