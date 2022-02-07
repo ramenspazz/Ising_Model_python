@@ -165,7 +165,7 @@ class Node:
             PE.PrintException()
 
     def __len__(self):
-        return len(self.links)
+        return(len(self.links))
 
     def __iter__(self):
         try:
@@ -232,7 +232,7 @@ class Node:
         return(len(self.links))
 
     def get_coords(self,
-    ReturnString: Optional[bool] = None) -> list[number | Number] | str:  # noqa E128
+    ReturnString: Optional[bool] = None) -> list[GNum] | str:  # noqa E128
         if ReturnString is None:
             return(self.coords.tolist())
         elif ReturnString is True:
@@ -371,9 +371,11 @@ class LinkedLattice:
         self.neighbors_ref: dict = self.__calcneighbor__()
         self.node_dict: dict[str, Node] = dict()
         self.num_nodes: int = int(0)
+        self.num_voids: int = int(0)
         self.origin_node: Node = None
         self.__shape = __shape
         self.generate(__shape)
+        self.visited = list()
 
     def __calcneighbor__(self) -> dict:
         """
@@ -541,7 +543,7 @@ class LinkedLattice:
             num_nodes : `int`
                 Number of total nodes.
         """
-        return(self.num_nodes)
+        return(self.num_nodes - self.num_voids)
 
     def append(self, child: list[Node] | Node,
     parent: Optional[Node] = None) -> None:  # noqa E128
@@ -627,10 +629,10 @@ class LinkedLattice:
         try:
             if self.basis_arr is None:
                 raise ValueError("Error, Basis must first be defined!")
-            elif isinstance(self.rots, Union[int, Int]) is not True:
-                # if the "symmetry" is irrational, use linear_generation
-                self.linear_generation(dims)
-                return
+            # elif isinstance(self.rots, Union[int, Int]) is not True:
+            #     # if the "symmetry" is irrational, use linear_generation
+            #     self.linear_generation(dims)
+            #     return
             cur_cor = np.array([0, 0])
             cur_ind = np.array([np.int64(0), np.int64(0)])
             CurNode = None
@@ -644,6 +646,7 @@ class LinkedLattice:
             neighbors: list[Node] = list()
             first_run = True
             check = None
+            sys.stdout.write("\n Generating, Please wait...\r")
             while cur_ind[0] <= dims[0]-1:
                 while cur_ind[1] <= dims[1]-1:
                     if first_run:
@@ -756,21 +759,14 @@ class LinkedLattice:
                     neighbors.clear()
                     yp1, ym1 = False, False
 
-                    if cur_ind[0] == dims[0]-1 and cur_ind[1] == dims[1]-1:
-                        sys.stdout.write('\nGeneration complete!\n')
-                        return
-
                     cur_ind = cur_ind + np.array([0, 1])  # increment y
                     cur_cor = cur_ind.dot(self.basis_arr)
 
                 xp1, xm1 = False, False
                 cur_ind[1] = 0
 
-                if cur_ind[0] == dims[0]-1 and cur_ind[1] == dims[1]-1:
-                    sys.stdout.write('\nGeneration complete!\n')
-                    return
-
                 cur_ind = cur_ind + np.array([1, 0])  # increment x
+            sys.stdout.write(' Generation complete!            \n')
         except Exception:
             PE.PrintException()
 

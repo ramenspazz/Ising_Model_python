@@ -7,11 +7,12 @@ to operate on the lattice
 # Typing imports
 from typing import Optional, Union
 from numbers import Number
-# import numpy.typing as npt
-from numpy.typing import NDArray
 from numpy import integer as Int, floating as Float, ndarray, number
+from numpy.typing import NDArray
+# import numpy.typing as npt
 
 import sys # noqa
+import math  # noqa
 import numpy as np
 from numpy import array
 import matplotlib.pyplot as plt
@@ -23,6 +24,7 @@ from scipy import rand # noqa E402
 from scipy.ndimage import convolve, generate_binary_structure # noqa
 from scipy.interpolate import griddata # noqa
 import linked_list_class as lc
+import Data_Analysis as DA
 import random
 from random import randint
 import PrintException as PE
@@ -37,7 +39,7 @@ class lattice_class:
 
     def __init__(
         self, scale: number | Number,
-        __shape: list[int] | NDArray[Int | Float],
+        Lshape: list[int] | NDArray[Int],
         basis: Optional[NDArray] = None) -> None: # noqa E125
         '''
             Parameters
@@ -46,7 +48,7 @@ class lattice_class:
             scale : `int` | `float`
                 - The scale of distances in centimeters
 
-            __shape : `list`[`int256`] | `NDArray`[`Int`]
+            Lshape : `list`[`int256`] | `NDArray`[`Int`]
                 - Span of the x and y bounds for the lattice.
 
             basis : Optional[`NDArray`]
@@ -54,21 +56,21 @@ class lattice_class:
                 on the first row and the y basis on the second row.
         '''
         try:
-            self.__shape = __shape
+            self.Lshape = Lshape
             self.lattice_spacing = scale
-            if self.__shape[0] == 0 or self.__shape[1] == 0:
+            if self.Lshape[0] == 0 or self.Lshape[1] == 0:
                 raise ValueError()
-            elif self.__shape[0] > 0 and self.__shape[1] > 0:
+            elif self.Lshape[0] > 0 and self.Lshape[1] > 0:
                 if basis is not None:
                     if isinstance(basis, ndarray):
                         input_basis = basis
                     else:
                         input_basis = array(basis)
                     self.internal_arr: lc.LinkedLattice = lc.LinkedLattice(
-                        scale, __shape, basis_arr=(input_basis))
+                        scale, Lshape, basis_arr=(input_basis))
                 elif basis is None:
                     self.internal_arr: lc.LinkedLattice = lc.LinkedLattice(
-                        scale, __shape, basis_arr=None)
+                        scale, Lshape, basis_arr=None)
         except Exception:
             PE.PrintException()
 
@@ -93,17 +95,16 @@ class lattice_class:
         try:
             if args is None:
                 sys.stderr.write("IS NONE")
-            if np.abs(self.__shape[0]) > 0 and np.abs(self.__shape[1]) > 0:
+            if np.abs(self.Lshape[0]) > 0 and np.abs(self.Lshape[1]) > 0:
                 return(self.internal_arr.__getitem__(*args))
             else:
                 raise IndexError(f"""Index tup is out of range! tup={args[0]}
-                is greater than the max index of {self.cols*self.rows-1}!\n""")
+                is greater than the max index of {self.Lshape[0]*self.Lshape[0]-1}!\n""")
         except Exception:
             PE.PrintException()
 
     def __iter__(self) -> lc.Node | None:
-        for item in self.internal_arr:
-            yield item
+        pass
 
     def __setitem__(self, index: list[int] | NDArray[Int], val: int | Int):
         """
@@ -138,8 +139,8 @@ class lattice_class:
             U = list()
             V = list()
             W = list()
-            for i in range(self.__shape[0]):
-                for j in range(self.__shape[1]):
+            for i in range(self.Lshape[0]):
+                for j in range(self.Lshape[1]):
                     cur = self[i, j]
                     U.append(cur.get_coords()[0])
                     V.append(cur.get_coords()[1])
@@ -156,13 +157,13 @@ class lattice_class:
             This function calls the `LinkedLattice` class member function
             `self.internal_arr.generate(dims)`.
         """
-        self.internal_arr.generate(self.__shape)
+        self.internal_arr.generate(self.Lshape)
 
     def get_energy(self):
         # $E/J = -\sum_{<i,j>} \sigma_i\sigma_j$
         return(self.internal_arr.Nearest_Neighbor())
 
-    def get_spin_energy(self, BJs=None, __times=None) -> list:
+    def get_spin_energy(self, BJs: list | ndarray, __times: Optional[int] = None) -> list:
         """
             Purpose
             -------
@@ -176,11 +177,57 @@ class lattice_class:
         else:
             times = __times
         for i, bj in enumerate(BJs):
-            spins, energies = self.metropolis(times, bj)
-            ms[i] = spins[-times:].mean()/(self.rows*self.cols)
+            SE_mtx = self.metropolis(times, bj)
+            spins = SE_mtx[:, 0]
+            energies = SE_mtx[:, 1]
+            ms[i] = spins[-times:].mean()/(self.Lshape[0]*self.Lshape[1])
             E_means[i] = energies[-times:].mean()
             E_stds[i] = energies[-times:].std()
-        return([ms, E_means, E_stds])
+            sys.stdout.write(f"get_spin_energy is {100 * i / len(BJs) :.2f}% complete...       \r")
+        sys.stdout.write(f"get_spin_energy is {100 :.2f}% complete!       \n")
+        self.plot_spin_energy(BJs, ms, E_stds)
+        return(ms, E_means, E_stds)
+    
+    def plot_spin_energy(self, bjs: ndarray, a: ndarray | list, c: ndarray | list) -> None:
+
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        ax1.plot(1/bjs, a, 'o--')
+        ax2.plot(1/bjs, c*bjs, 'x--')
+        plt.show()
+
+    def plot_metrop(num_nodes, SE_mtx, BJ, size):
+        spin_up = 0
+        spin_dn = 0
+        spin0 = 0
+        for val in SE_mtx[:,0]:
+            if val > 0:
+                spin_up += val
+            elif val < 0:
+                spin_dn += val
+        total = np.abs(spin_up) + np.abs(spin_dn)
+        mean = DA.data_mean(SE_mtx[:, 0])
+        stdev = DA.std_dev(SE_mtx[:, 0], mean, sample=False)
+        print(f"""
+        Average up sum of spins density is {np.abs(spin_up) / num_nodes :.4f}%\n
+        The percent of time spent spin dn on average is {np.abs(spin_dn) / num_nodes :.4f}%\n
+        The mean is {mean}\n
+        The Standard deviation of the mean is {stdev / np.sqrt(size[0]*size[1]) :.4f}\n
+        """)
+        fig, axes = plt.subplots(
+            1, 2, figsize=(12, 4),
+            num=f'Evolution of Average Spin n={(size[0]*size[1])**2} and Energy for BJ={BJ}')
+        ax = axes[0]
+        ax.plot(SE_mtx[:, 0] / (size[0]*size[1]))
+        ax.set_xlabel('Time Steps')
+        ax.set_ylabel(r'Average Spin $\bar{m}$')
+        ax.grid()
+        ax = axes[1]
+        ax.plot(SE_mtx[:, 1])
+        ax.set_xlabel('Time Steps')
+        ax.set_ylabel(r'Energy $E/J$')
+        ax.grid()
+        fig.tight_layout()
+        plt.show()
 
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
@@ -198,8 +245,8 @@ class lattice_class:
             for i in range(0, times):
                 # 2. pick random point on array and flip spin
                 while True:
-                    rand_x = randint(0, self.__shape[0] - 1)
-                    rand_y = randint(0, self.__shape[1] - 1)
+                    rand_x = randint(0, self.Lshape[0] - 1)
+                    rand_y = randint(0, self.Lshape[1] - 1)
                     node_i = self.internal_arr[rand_x, rand_y]  # initial spin
                     if node_i is not None and node_i.get_spin() == 0:
                         # keep looking for a viable random node
@@ -225,11 +272,13 @@ class lattice_class:
                 elif dE <= 0:
                     self.internal_arr[rand_x, rand_y].flip_spin()
                     energy += dE
-                if quiet is False and i % 100 == 0:
-                    self.display()
+                # if quiet is False and i % 100 == 0:
+                #     self.display()
                 SE_mtx[i, 0] = self.internal_arr.Sum()
                 SE_mtx[i, 1] = energy
             del energy
+            if quiet is False:
+                self.plot_metrop(SE_mtx, BJ, self.Lshape)
             return(SE_mtx)
         except Exception:
             PE.PrintException()
@@ -259,30 +308,22 @@ class lattice_class:
                 if quiet is not True:
                     sys.stdout.write(f"Generating Seed = {rand_seed}\n")
                 random.seed(rand_seed)
-                for i in range(self.__shape[0]):
+                for i in range(self.Lshape[0]):
                     if voids is True:
-                        for j in range(self.__shape[1]):
-                            cond = random.gauss(0.5, 0.25)
-                            if cond >= 0 and cond < probs[0]:
-                                rand_num = -1
-                            elif cond >= probs[0] and cond <= probs[1]:
-                                rand_num = 0
-                            else:
-                                rand_num = 1
-                            rand_num = randint(0,2) - 1
+                        for j in range(self.Lshape[1]):
+                            rand_num = (randint(-50,50) * probs[0] + probs[1]) % 3 - 1
                             self[i, j] = rand_num
+                            if rand_num == 0:
+                                self.internal_arr.num_voids += 1
+                            
                     elif voids is False:
-                        for j in range(self.__shape[1]):
-                            cond = random.gauss(0.5, 0.25)
-                            if cond >= probs[0]:
-                                rand_num = -1
-                            else:
-                                rand_num = 1
-                            self[i, j] = rand_num
+                        for j in range(self.Lshape[1]):
+                            self[i, j] = -1 if randint(1,100) % 2 == 0 else 1
+
             return(None)
         except Exception:
             PE.PrintException()
 
     def shape(self) -> tuple:
-        return(self.__shape)
+        return(self.Lshape)
 
