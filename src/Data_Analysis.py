@@ -12,13 +12,15 @@ Purpose:
 '''
 
 from cmath import nan
+from numbers import Number
+from numpy import number
+from typing import Optional, Union
 import math
 import re
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import modeling
 import sympy as sym
-import linecache
 import sys
 import PrintException as PE
 from math import log10, floor
@@ -318,11 +320,13 @@ def std_dev(data, mean, sample=True):
     """
     try:
         p_sum = 0
-        for item in data:# compute the inner sum of the standard deviation
-            if item is nan:
-                print(nan)
+        for i, item in enumerate(data):# compute the inner sum of the standard deviation
+            try:
+                if isinstance(item, Union[number, Number]) is True:
+                    p_sum = p_sum + (item - mean)**2
+            except RuntimeWarning:
+                print(f"Warning!\nitem #{i} = {item}, type={type(item)}")
                 continue
-            p_sum = p_sum + (item - mean)**2
         if sample is True:
             standard_deviation = np.sqrt(
                 np.abs(p_sum) / (len(data) - 1)
