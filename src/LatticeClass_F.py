@@ -135,15 +135,16 @@ class lattice_class:
             spin states of the lattice nodes.
         """
         try:
-            coords = list()
+            U = list()
+            V = list()
             W = list()
             for i in range(self.__shape[0]):
                 for j in range(self.__shape[1]):
                     cur = self[i, j]
-                    coords.append([cur.get_coords(), 0])
-                    coords[i+j][1] = cur.get_spin()
-            plt.scatter(coords[:][0], coords[:][1],
-                c=coords[1], cmap='viridis')
+                    U.append(cur.get_coords()[0])
+                    V.append(cur.get_coords()[1])
+                    W.append(cur.get_spin())
+            plt.scatter(U, V, c=W, cmap='viridis')
             plt.show()
         except Exception:
             PE.PrintException()
