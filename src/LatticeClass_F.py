@@ -12,7 +12,6 @@ from numpy.typing import NDArray
 # import numpy.typing as npt
 
 import sys # noqa
-import math  # noqa
 import numpy as np
 from numpy import array
 import matplotlib.pyplot as plt
@@ -22,7 +21,7 @@ from matplotlib import cm # noqa E402
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from scipy import rand # noqa E402
 from scipy.ndimage import convolve, generate_binary_structure # noqa
-from scipy.interpolate import griddata # noqa
+from scipy.interpolate import griddata
 import linked_list_class as lc
 import Data_Analysis as DA
 import random
@@ -30,6 +29,21 @@ from random import randint
 import PrintException as PE
 
 GNum = Union[number, Number]
+
+
+def isnotebook():
+    try:
+        print('\n\nIS IT?!?!?!?!?!?\n\n')
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            print('\nYES I LOVE TITTES\n')
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
 
 
 class lattice_class:
@@ -167,7 +181,8 @@ class lattice_class:
         """
             Purpose
             -------
-            Computes the energy of the lattice using nearest neighbors.
+            Computes the energy of the lattice at thermal equlibrium and
+            relates this to T=J/(Beta*J*k) = 1/(Beta*k) ~ 1/(Beta*J)
         """
         ms = np.zeros(len(BJs))
         E_means = np.zeros(len(BJs))
@@ -184,6 +199,8 @@ class lattice_class:
             E_means[i] = energies[-times:].mean()
             E_stds[i] = energies[-times:].std()
             sys.stdout.write(f"get_spin_energy is {100 * i / len(BJs) :.2f}% complete...       \r")
+            if True or isnotebook() is True:
+                self.plot_metrop(SE_mtx, bj)
         sys.stdout.write(f"get_spin_energy is {100 :.2f}% complete!       \n")
         self.plot_spin_energy(BJs, ms, E_stds)
         return(ms, E_means, E_stds)
@@ -191,33 +208,43 @@ class lattice_class:
     def plot_spin_energy(self, bjs: ndarray, a: ndarray | list, c: ndarray | list) -> None:
 
         fig, (ax1, ax2) = plt.subplots(1, 2)
-        ax1.plot(1/bjs, a, 'o--')
-        ax2.plot(1/bjs, c*bjs, 'x--')
+        ax1.plot(1/bjs, a, 'o--', label=r"<T> vs $\left(\frac{k}{J}\right)T$")
+        ax1.legend()
+        ax2.plot(1/bjs, c*bjs, 'x--', label=r'$C_V / k^2$ vs $\left(\frac{k}{J}\right)T$')
+        ax2.legend()
         plt.show()
 
-    def plot_metrop(num_nodes, SE_mtx, BJ, size):
-        spin_up = 0
-        spin_dn = 0
-        spin0 = 0
-        for val in SE_mtx[:,0]:
-            if val > 0:
-                spin_up += val
-            elif val < 0:
-                spin_dn += val
-        total = np.abs(spin_up) + np.abs(spin_dn)
-        mean = DA.data_mean(SE_mtx[:, 0])
-        stdev = DA.std_dev(SE_mtx[:, 0], mean, sample=False)
-        print(f"""
-        Average up sum of spins density is {np.abs(spin_up) / num_nodes :.4f}%\n
-        The percent of time spent spin dn on average is {np.abs(spin_dn) / num_nodes :.4f}%\n
-        The mean is {mean}\n
-        The Standard deviation of the mean is {stdev / np.sqrt(size[0]*size[1]) :.4f}\n
-        """)
+    def plot_metrop(self, SE_mtx, BJ, quiet=True):
+        """
+        Parameters
+        ---------- 
+        SE_mtx 
+        BJ
+        """
+        num_nodes = len(self.internal_arr)
+        if quiet is False:
+            spin_up = 0
+            spin_dn = 0
+            spin0 = 0
+            for val in SE_mtx[:,0]:
+                if val > 0:
+                    spin_up += val
+                elif val < 0:
+                    spin_dn += val
+            total = np.abs(spin_up) + np.abs(spin_dn)
+            mean = DA.data_mean(SE_mtx[:, 0])
+            stdev = DA.std_dev(SE_mtx[:, 0], mean, sample=False)
+            print(f"""
+            Average up sum of spins density is {np.abs(spin_up) / num_nodes :.4f}%\n
+            Average up sum of spins density is {np.abs(spin_dn) / num_nodes :.4f}%\n
+            The mean is {mean}\n
+            The Standard deviation of the mean is {stdev / np.sqrt(num_nodes) :.4f}\n
+            """)
         fig, axes = plt.subplots(
             1, 2, figsize=(12, 4),
-            num=f'Evolution of Average Spin n={(size[0]*size[1])**2} and Energy for BJ={BJ}')
+            num=f'Evolution of Average Spin n={num_nodes**2} and Energy for BJ={BJ}')
         ax = axes[0]
-        ax.plot(SE_mtx[:, 0] / (size[0]*size[1]))
+        ax.plot(SE_mtx[:, 0] / num_nodes)
         ax.set_xlabel('Time Steps')
         ax.set_ylabel(r'Average Spin $\bar{m}$')
         ax.grid()

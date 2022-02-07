@@ -391,8 +391,8 @@ class LinkedLattice:
         __rots = 6 if self.rots == 3 else self.rots
 
         if isinstance(self.rots, Float) is True:
-            rot_range = np.linspace(0, np.int64(100 * __rots),
-                np.int64(100 * __rots))  # noqa E128
+            rot_range = np.linspace(0, np.int64(10 * __rots),
+                8)  # noqa E128
         else:
             rot_range = range(__rots)
 
@@ -411,8 +411,8 @@ class LinkedLattice:
         p_vec = self.y_length * b1
 
         if isinstance(self.rots, Float) is True:
-            rot_range = np.linspace(0, np.int64(100 * __rots),
-                np.int64(100 * 2 * __rots))  # noqa E128
+            rot_range = np.linspace(0, np.int64(10 * __rots),
+                np.int64(16 * __rots))  # noqa E128
         else:
             rot_range = range(2 * __rots)
 
@@ -452,7 +452,7 @@ class LinkedLattice:
 
     def Sum(self):
         sum = 0
-        for i in range(self.__shape[0]):  # TODO
+        for i in range(self.__shape[0]):
             for j in range(self.__shape[1]):
                 sum += self[i, j].get_spin()
         return(sum)

@@ -61,8 +61,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 10
-        M = 10
+        N = 15
+        M = 15
         size = [N, M]
         lt_a = lt(1, size)
         lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
@@ -96,7 +96,7 @@ def main(*args, **kwargs) -> int:
         lt_c.display()
         lt_d.display()
 
-        BJs = np.arange(0.1, 2, 0.05)
+        BJs = np.arange(-2, -0.1, 0.1)
         total_time = 1000
         BJ = 0.1
 
