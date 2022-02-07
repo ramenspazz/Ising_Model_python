@@ -184,7 +184,7 @@ class lattice_class:
 
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
-    def metropolis(self, times: int | Int, BJ: float | Float) -> ndarray:
+    def metropolis(self, times: int | Int, BJ: float | Float, quiet: Optional[bool] = True) -> ndarray:
         """
             Purpose
             -------
@@ -225,7 +225,7 @@ class lattice_class:
                 elif dE <= 0:
                     self.internal_arr[rand_x, rand_y].flip_spin()
                     energy += dE
-                if i % 100 == 0:
+                if quiet is False and i % 100 == 0:
                     self.display()
                 SE_mtx[i, 0] = self.internal_arr.Sum()
                 SE_mtx[i, 1] = energy
