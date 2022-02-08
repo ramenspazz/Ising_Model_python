@@ -30,7 +30,6 @@ import PrintException as PE
 
 GNum = Union[number, Number]
 
-
 def isnotebook():
     try:
         shell = get_ipython().__class__.__name__  # noqa 

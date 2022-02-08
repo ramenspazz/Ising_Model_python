@@ -4,6 +4,7 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
+from asyncio import as_completed
 # Typing imports
 from typing import Optional, Union, TYPE_CHECKING  # noqa F401
 from numbers import Number
@@ -17,6 +18,11 @@ import numpy as np
 from numpy.linalg import norm
 import PrintException as PE
 import re
+import threading as td
+import multiprocessing
+from multiprocessing.dummy import Pool as ThreadPool
+import concurrent.futures as CF
+import time
 
 GNum = Union[number, Number]
 r_str: str = ['-0.0', '-0.', '-0']
@@ -458,12 +464,40 @@ class LinkedLattice:
         return(sum)
 
     def Nearest_Neighbor(self) -> np.int256:
+        results = list()
+        cords = list()
+        nodes = list()
+        args_list = list()
         sum: np.int256 = 0
         visited: list[Node] = list()
-        sum = self.__NNGenerator__(self.origin_node, sum, visited)
+        wc = multiprocessing.cpu_count() - 1   
+        wc = wc if wc < self.num_nodes else self.num_nodes
+
+        for i in range(wc):
+            cords.append([i % self.__shape[0], int(i / self.__shape[1])])
+            cor = self[cords[len(cords)-1]]
+            if cor is not None:
+                nodes.append(cor)
+                continue
+            else:
+                cords.pop()
+                continue
+
+        with CF.ThreadPoolExecutor(max_workers=wc) as exe:
+            futures = {exe.submit(self.__NN_Worker__, _node, visited): _node for _node in nodes}
+            for future in CF.as_completed(futures):
+                cur_node = futures[future]
+                try:
+                    data = future.result()
+                except Exception as e:
+                    print(e)
+                    return(0)
+                else:
+                    sum += data
+
         return(sum)
 
-    def __NNGenerator__(self, _node: Node, spin_sum: np.int256,
+    def __NNGeneratorRecursive__(self, _node: Node, spin_sum: np.int256,
     visited: list[Node]) -> np.int256:  # noqa E128
         """
             Parameters
@@ -486,9 +520,52 @@ class LinkedLattice:
         for neighbor in neighbors:
             if neighbor not in visited:
                 visited.append(neighbor)
-                return(self.__NNGenerator__(neighbor, spin_sum, visited))
+                return(td.Thread(self.__NNGenerator__, {neighbor, spin_sum, visited}))
             else:
                 continue
+        return(spin_sum)
+
+    def __NN_Worker__(self, start_node: Node, visited: list) -> int | Int:
+        """
+            Parameters
+            ---------
+            start_node : `Node`
+                - Begining `Node` for the thread.
+
+            visited : `list`[`Node`]
+                - `list` of already used nodes
+            
+            Returns
+            -------
+            spin_sum : `int` | `numpy.integer`
+                - This threads final parital sum to return.
+        """
+        # Begin by creating a visit list for keeping track of nodes we still need to visit
+        # and a visited list that will keep track of what has already been visited.
+        spin_sum: np.int256 = 0
+        visit = list(start_node)
+        while True:
+            try:
+                # this works by breaking when the visit list is empty
+                cur = visit.pop()
+                visited.append(cur)
+            except IndexError:
+                # when the list is empty, break out of the while loop
+                break
+            cur_neighbors = cur.get_connected()
+            if not (cur.get_spin() == 0):
+                for nbr in cur_neighbors:
+                    if not nbr.get_spin() == 0:
+                        for nbr in cur_neighbors:
+                            temp = nbr.get_spin()
+                            if temp == 0:
+                                continue
+                            spin_sum += nbr.get_spin()
+            for nbr in cur_neighbors:
+                if nbr not in visited:
+                    visit.append(nbr)
+                else:
+                    continue
         return(spin_sum)
 
     def __setitem__(self, __NodeIndex: list | NDArray,
