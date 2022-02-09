@@ -53,7 +53,10 @@ class lattice_class:
                 on the first row and the y basis on the second row.
         '''
         try:
-            self.Lshape = Lshape
+            self.Lshape = np.array([
+                np.int64(Lshape[0]),
+                np.int64(Lshape[1])
+                ])
             self.lattice_spacing = scale
             self.threaded = True
             self.time = time
@@ -268,7 +271,7 @@ class lattice_class:
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
     def metropolis(self, times: int | Int, BJ: float | Float,
-                   quiet: Optional[bool] = True) -> ndarray:
+                   quiet: Optional[bool] = None) -> ndarray:
         """
             Purpose
             -------
@@ -277,32 +280,33 @@ class lattice_class:
             itterations to preform.
         """
         try:
+            if not (self.time == times):
+                self.set_time(times)
             SE_mtx = self.ZERO_mtx
             energy = self.internal_arr.__threadlauncher__(
                 self.internal_arr.__NN_Worker__)
-            # energy = self.get_energy()
 
             for i in range(0, times):
-                # get the current energy
-
                 # pick random point on array and flip spin
                 while True:
                     rand_x = randint(0, self.Lshape[0] - 1)
                     rand_y = randint(0, self.Lshape[1] - 1)
                     node_i = self.internal_arr[rand_x, rand_y]  # initial spin
-                    if node_i is not None and node_i.get_spin() == 0:
+                    if node_i is None:
                         # keep looking for a viable random node
+                        continue
+                    elif node_i.get_spin() == 0:
                         continue
                     else:
                         # exit random node selection loop
                         break
 
                 # compute change in energy with nearest neighbors
-                E_i: np.int256 = energy
-                E_f: np.int256 = energy
+                E_i: np.int64 = 0
+                E_f: np.int64 = 0
 
                 # call multithread neighbors sum
-                for neighbor in node_i:
+                for neighbor in node_i.get_connected():
                     if neighbor.get_spin() == 0:
                         continue
                     E_i += -node_i.get_spin() * neighbor.get_spin()
@@ -323,10 +327,9 @@ class lattice_class:
 
                 SE_mtx[i, 0] = spin
                 SE_mtx[i, 1] = energy
-
-            if quiet is False and i % 100 == 0:
+            # for i in range(0, times):
+            if quiet is False:
                 self.plot_metrop(SE_mtx, BJ)
-
             return(SE_mtx)
         except Exception:
             PE.PrintException()

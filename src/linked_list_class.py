@@ -22,6 +22,7 @@ import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool  # noqa TODO : Use it later
 import concurrent.futures as CF
 
+
 GNum = Union[number, Number]
 MIN_INT = pow(-2, 31)
 MAX_INT = pow(2, 31) - 1
@@ -278,16 +279,15 @@ class Node:
     def __len__(self):
         return(len(self.links))
 
-    def __iter__(self):
-        try:
-            # Check if the node has any neighbors
-            if len(self.links) > 0:
-                for link in self.links:
-                    yield link
-            else:
-                yield self
-        except Exception:
-            PE.PrintException()
+    def __iter__(self) -> Node:
+        if self.origin_node is None:
+            print("welp...")
+            raise ValueError("\nIterator : origin node is None!\n")
+        curr: Node = self.origin_node
+        while curr is not None:
+            yield(curr)
+            curr = curr.get_foward_link()
+        raise StopIteration
 
     def __setitem__(self, __value: int) -> None:
         self.spin_state = __value
@@ -354,6 +354,9 @@ class Node:
             return(self.coords.tolist())
         elif ReturnString is True:
             return(StripString(self.coords, r_str))
+
+    def get_coords_and_spin(self) -> ndarray:
+        return(np.array([*self.coords, self.spin_state]))
 
     def get_combination(
             self,
@@ -517,13 +520,6 @@ class LinkedLattice:
         except Exception:
             PE.PrintException()
 
-    def __iter__(self) -> Node:
-        curr: Node = self.origin_node
-        while curr is not None:
-            yield(curr)
-            curr = curr.get_foward_link()
-        return
-
     def range(self, start: int, stop: int, step: Optional[int] = None):
         curr: Node = self.origin_node
         if step is None:
@@ -674,23 +670,29 @@ class LinkedLattice:
         # Begin by creating a visit list for keeping track of nodes we still
         # need to visit and a visited list that will keep track of what has
         # already been visited.
-        sum: np.int256 = 0
-        lower_B = bounds[0]
-        upper_B = bounds[1]
+        try:
+            sum: np.int64 = 0
+            lower_B = bounds[0]
+            upper_B = bounds[1]
 
-        for node in self.range(lower_B, upper_B):
-            sum += node.get_spin()
-        return(sum)
+            for node in self.range(lower_B, upper_B):
+                sum += node.get_spin()
+            return(sum)
+        except Exception:
+            PE.PrintException()
 
     def __NN_Worker__(self, bounds: list) -> int | Int:
-        sum: np.int256 = 0
-        lower_B = bounds[0]
-        upper_B = bounds[1]
+        try:
+            sum: np.int64 = 0
+            lower_B = bounds[0]
+            upper_B = bounds[1]
 
-        for node in self.range(lower_B, upper_B):
-            for nbr in node.get_connected():
-                sum += nbr.spin_state
-        return(sum)
+            for node in self.range(lower_B, upper_B):
+                for nbr in node.get_connected():
+                    sum += nbr.spin_state
+            return(sum)
+        except Exception:
+            PE.PrintException()
 
     def __setitem__(self, __NodeIndex: list | NDArray,
                     __value: int) -> None:
