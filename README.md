@@ -8,4 +8,4 @@ conda env create -f env_export.yml
 ```
 
 ## Note
-All muultithreading appears to be working properly. If this is not the case for you, let me know.
+All multithreading appears to be working properly. If this is not the case for you, let me know.
