@@ -121,7 +121,7 @@ class lattice_class:
             ----------
 
             index : `list`
-                - index of the basis combination refrencing a node.
+           16     - index of the basis combination refrencing a node.
 
             val : `int` | `Int`
                 - Value to set the spin of the node refrenced by index.
@@ -165,10 +165,7 @@ class lattice_class:
 
     def get_energy(self):
         # $E/J = -\sum_{<i,j>} \sigma_i\sigma_j$
-        if self.threaded is True:
-            return(self.internal_arr.Nearest_Neighbor())
-        else:
-            return(self.internal_arr.Nearest_Neighbor_Rec())
+        return(self.internal_arr.Nearest_Neighbor())
 
     def get_spin_energy(self,
                         BJs: list | ndarray,

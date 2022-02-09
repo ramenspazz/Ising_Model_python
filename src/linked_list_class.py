@@ -641,7 +641,7 @@ class LinkedLattice:
                     upper = (i+1)*Div - 1
                     bounds.append([lower, upper])
                 # append the extra
-                bounds.append((tc+1)*Div - 1, self.num_nodes - 1)
+                bounds.append([(tc+1)*Div - 1, self.num_nodes - 1])
         elif tc == 1:
             bounds.append([0, self.num_nodes - 1])
 
@@ -711,7 +711,7 @@ class LinkedLattice:
                     upper = (i+1)*Div - 1
                     bounds.append([lower, upper])
                 # append the extra
-                bounds.append((tc+1)*Div - 1, self.num_nodes - 1)
+                bounds.append([(tc+1)*Div - 1, self.num_nodes - 1])
         elif tc == 1:
             bounds.append([0, self.num_nodes - 1])
 
