@@ -5,7 +5,7 @@ This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
 # Typing imports
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from numbers import Number
 import numpy.typing as npt  # noqa
 from numpy.typing import NDArray
@@ -613,8 +613,10 @@ class LinkedLattice:
                 continue
         return(False)
 
-    def Sum(self, threads: Optional[int] = None) -> int | Int:
-        sum = 0
+    def __threadlauncher__(self,
+                           run_function: Callable[[], list],
+                           threads: Optional[int] = None) -> int | Int:
+        res = 0
         if threads is None:
             tc = multiprocessing.cpu_count()  # threadcount
         else:
@@ -623,7 +625,6 @@ class LinkedLattice:
         x = self.__shape[0]
         y = self.__shape[1]
         Div, Rem = Dividend_Remainder(x, y, tc)
-
         if tc > 1:
             if Rem == 0:
                 # tc evenly divides the area so split the alttice into
@@ -647,7 +648,7 @@ class LinkedLattice:
 
         with CF.ThreadPoolExecutor(max_workers=tc) as exe:
             futures = {exe.submit(
-                self.__Sum_Worker__,
+                run_function,
                 bound): bound for bound in bounds}
             for future in CF.as_completed(futures):
                 try:
@@ -655,8 +656,8 @@ class LinkedLattice:
                 except Exception:
                     return(0)
                 else:
-                    sum += data
-        return(sum)
+                    res += data
+        return(res)
 
     def __Sum_Worker__(self, bounds: list | ndarray) -> int | Int:
         """
@@ -679,53 +680,6 @@ class LinkedLattice:
 
         for node in self.range(lower_B, upper_B):
             sum += node.get_spin()
-        return(sum)
-
-    def __thread_launcher_(self) -> int | Int:
-        pass
-
-    def Nearest_Neighbor(self, threads: Optional[int] = None) -> int | Int:
-        sum = 0
-        if threads is None:
-            tc = multiprocessing.cpu_count()  # threadcount
-        else:
-            tc = threads
-        bounds: list = list()
-        x = self.__shape[0]
-        y = self.__shape[1]
-        Div, Rem = Dividend_Remainder(x, y, tc)
-        if tc > 1:
-            if Rem == 0:
-                # tc evenly divides the area so split the alttice into
-                # tc instances of Div Nodes total.
-                for i in range(tc):
-                    lower = i*Div
-                    upper = (i+1)*Div - 1
-                    # print(lower, upper)
-                    bounds.append([lower, upper])
-            else:
-                # create tc instances of Div size to sum
-                # tc instances of Div Nodes total.
-                for i in range(tc):
-                    lower = i*Div
-                    upper = (i+1)*Div - 1
-                    bounds.append([lower, upper])
-                # append the extra
-                bounds.append([(tc+1)*Div - 1, self.num_nodes - 1])
-        elif tc == 1:
-            bounds.append([0, self.num_nodes - 1])
-
-        with CF.ThreadPoolExecutor(max_workers=tc) as exe:
-            futures = {exe.submit(
-                self.__NN_Worker__,
-                bound): bound for bound in bounds}
-            for future in CF.as_completed(futures):
-                try:
-                    data = future.result()
-                except Exception:
-                    return(0)
-                else:
-                    sum += data
         return(sum)
 
     def __NN_Worker__(self, bounds: list) -> int | Int:

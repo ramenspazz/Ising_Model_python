@@ -278,7 +278,8 @@ class lattice_class:
         """
         try:
             SE_mtx = self.ZERO_mtx
-            energy = self.get_energy()
+            energy = self.internal_arr.__threadlauncher__(
+                self.internal_arr.__NN_Worker__)
             # energy = self.get_energy()
 
             for i in range(0, times):
@@ -316,7 +317,8 @@ class lattice_class:
                 elif dE <= 0:
                     self.internal_arr[rand_x, rand_y].flip_spin()
 
-                spin = self.internal_arr.Sum()
+                spin = self.internal_arr.__threadlauncher__(
+                    self.internal_arr.__Sum_Worker__)
                 energy += dE
 
                 SE_mtx[i, 0] = spin
