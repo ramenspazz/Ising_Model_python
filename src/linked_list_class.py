@@ -4,6 +4,7 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
+from tabnanny import check
 # Typing imports
 from typing import Optional, Union, Callable
 from numbers import Number
@@ -29,6 +30,76 @@ MAX_INT = pow(2, 31) - 1
 # r_str: str = ['-0.0', '-0.', '-0']
 r_str: str = ['-0.0']
 
+
+def StripString(input: NDArray[number] | GNum | str,
+                replace: list[str],
+                is_int: Optional[bool] = None) -> str:
+    """
+    TODO FIX for integers
+        Purpose
+        -------
+        This function is used to sanitize input to remove all forms of
+        parenthaticals, and to remove the IEEE `-0`, `-0.`, and `-0.0`.
+        This function only removes complete patterns and not a pattern embeded
+        within another complete number; IE, -0.01 contains -0.0. but is a
+        seperate number entirely even though the pattern -0.0 is indeed
+        contained within. I honestly dont know why they declined to remove
+        these negative zero abominations but whatever. Sthap messing with my
+        floating points IEEE :(
+
+        Parameters
+        ----------
+            input : `NDArray` | `Number` | `str`
+                The input to sanatize.
+            replace : `list[str]`
+                A list of strings containing the patterns to be removed.
+    """
+    if isinstance(input, str) is not True:
+        name = str(input)
+    else:
+        name = input
+    checks = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    checks_int = ['0.0', '1.0', '2.0', '3.0', '4.0', '5.0', '6.0', '7.0', '8.0', '9.0']    
+    name = name.translate({ord(c): None for c in '[](),'})
+    for repl in replace:
+        __iter = re.finditer(repl, name)
+        hits = list()
+        for i, val in enumerate(__iter):
+            # get the begining and ending index of the search pattern of
+            # a checks list item.
+            temp = val.span()
+            try:
+                next_char = name[temp[1]]
+                if next_char not in checks:
+                    hits.append(temp[0])
+            except IndexError:
+                # If at the end of the string and we attempt to overstep the
+                # boundary, we can throw an error and catch it to signal that
+                # the search pattern happens at the end of the string. After
+                # this we add the index to the list to be shift out splice
+                # index later.
+                hits.append(temp[0])
+                continue
+        for i, val in enumerate(hits):
+            name = name[:val - i] + name[val + 1 - i:]
+    # remove whitespace at the begining of the string
+    if name[0] == ' ':
+        name = name[1:len(name)]
+    # remove whitespace after first complete number
+    temp_str = name.split(' ')
+    name = ''
+    for i, item in enumerate(temp_str):
+        if item == '':
+            continue
+        else:
+            if not (i == len(temp_str) - 1):
+                name += item + ' '
+            else:
+                name += item
+    if is_int is True:
+        for num, NUM in zip(checks, checks_int):
+            name = name.replace(NUM, num)
+    return(name)
 
 def Dividend_Remainder(n: int | Int,
                        m: int | Int,
@@ -89,72 +160,6 @@ def Dividend_Remainder(n: int | Int,
                 continue
     except Exception:
         pass
-
-
-def StripString(input: NDArray[number] | GNum | str,
-                replace: list[str]) -> str:
-    """
-        Purpose
-        -------
-        This function is used to sanitize input to remove all forms of
-        parenthaticals, and to remove the IEEE `-0`, `-0.`, and `-0.0`.
-        This function only removes complete patterns and not a pattern embeded
-        within another complete number; IE, -0.01 contains -0.0. but is a
-        seperate number entirely even though the pattern -0.0 is indeed
-        contained within. I honestly dont know why they declined to remove
-        these negative zero abominations but whatever. Sthap messing with my
-        floating points IEEE :(
-
-        Parameters
-        ----------
-            input : `NDArray` | `Number` | `str`
-                The input to sanatize.
-            replace : `list[str]`
-                A list of strings containing the patterns to be removed.
-    """
-    if isinstance(input, str) is not True:
-        name = str(input)
-    else:
-        name = input
-    checks = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    name = name.translate({ord(c): None for c in '[](),'})
-    for repl in replace:
-        __iter = re.finditer(repl, name)
-        hits = list()
-        for i, val in enumerate(__iter):
-            # get the begining and ending index of the search pattern of
-            # a checks list item.
-            temp = val.span()
-            try:
-                next_char = name[temp[1]]
-                if next_char not in checks:
-                    hits.append(temp[0])
-            except IndexError:
-                # If at the end of the string and we attempt to overstep the
-                # boundary, we can throw an error and catch it to signal that
-                # the search pattern happens at the end of the string. After
-                # this we add the index to the list to be shift out splice
-                # index later.
-                hits.append(temp[0])
-                continue
-        for i, val in enumerate(hits):
-            name = name[:val - i] + name[val + 1 - i:]
-    # remove whitespace at the begining of the string
-    if name[0] == ' ':
-        name = name[1:len(name)]
-    # remove whitespace after first complete number
-    temp_str = name.split(' ')
-    name = ''
-    for i, item in enumerate(temp_str):
-        if item == '':
-            continue
-        else:
-            if not (i == len(temp_str) - 1):
-                name += item + ' '
-            else:
-                name += item
-    return(name)
-
 
 def round_num(input: Float,
               figures: Int,
@@ -238,14 +243,16 @@ class Node:
         return(len(self.links))
 
     def __iter__(self) -> Node:
-        if self.origin_node is None:
-            print("welp...")
-            raise ValueError("\nIterator : origin node is None!\n")
-        curr: Node = self.origin_node
-        while curr is not None:
-            yield(curr)
-            curr = curr.get_foward_link()
-        raise StopIteration
+        try:
+            if self.origin_node is None:
+                raise ValueError("\nIterator : origin node is None!\n")
+            curr: Node = self.origin_node
+            while curr is not None:
+                yield(curr)
+                curr = curr.get_foward_link()
+            return
+        except Exception:
+            PE.PrintException()
 
     def __setitem__(self, __value: int) -> None:
         self.spin_state = __value
@@ -484,6 +491,7 @@ class LinkedLattice:
         curr: Node = self.origin_node
         index_check = stop - start
         index = 0
+        curr = self[start]
         while curr is not None and index_check >= index:
             yield(curr)
             for i in range(step):
@@ -585,7 +593,6 @@ class LinkedLattice:
                 for i in range(tc):
                     lower = i*Div
                     upper = (i+1)*Div - 1
-                    # print(lower, upper)
                     bounds.append([lower, upper])
             else:
                 # create tc instances of Div size to sum
@@ -675,6 +682,9 @@ class LinkedLattice:
         except Exception:
             PE.PrintException()
 
+    def __nodedictget__(self, a, b):
+        pass
+
     def __getitem__(self,
                     __NodeIndex: list | NDArray | int | Int) -> Node | None:
         """
@@ -693,12 +703,12 @@ class LinkedLattice:
                     No existing `Node` was found, return `None`
         """
         try:
-            if type(__NodeIndex) == Int | int:
-                coord = [
-                         __NodeIndex % self.__shape[0],
-                         int(__NodeIndex / self.__shape[0]]
-                return(self[coord]
-            return(self.node_dict.get(StripString(__NodeIndex, r_str)))
+            if type(__NodeIndex) == int:
+                coord = [__NodeIndex % self.__shape[0], int(__NodeIndex / self.__shape[0])]
+                return(self[coord])
+            else:
+                retval  = self.node_dict.get(StripString(__NodeIndex, r_str, is_int=True))
+                return(retval)
         except Exception:
             PE.PrintException()
 

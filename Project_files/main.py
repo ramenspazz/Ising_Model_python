@@ -28,8 +28,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 64
-        M = 64
+        N = 8
+        M = 8
         size = [N, M]
         total_time = 1000
         BJs = np.arange(0.1, 2, 0.1)  # noqa
@@ -52,10 +52,10 @@ def main(*args, **kwargs) -> int:
             seed = 1644121893
             lt_a.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
                            quiet=False)
-            lt_b.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
-                           quiet=True)
-            lt_c.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
-                           quiet=True)
+            # lt_b.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
+            #                quiet=True)
+            # lt_c.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
+            #                quiet=True)
             # lt_d.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
             #                quiet=True)
 
@@ -65,21 +65,21 @@ def main(*args, **kwargs) -> int:
                  random(), random()],
                  rand_seed=rand_time(), quiet=False)
 
-            lt_b.randomize(voids=False, probs=[
-                 random(), random()],
-                 rand_seed=rand_time(), quiet=False)
+            # lt_b.randomize(voids=False, probs=[
+            #      random(), random()],
+            #      rand_seed=rand_time(), quiet=False)
 
-            lt_c.randomize(voids=False, probs=[
-                 random(), random()],
-                 rand_seed=rand_time(), quiet=False)
+            # lt_c.randomize(voids=False, probs=[
+            #      random(), random()],
+            #      rand_seed=rand_time(), quiet=False)
 
             # lt_d.randomize(voids=False, probs=[
             #      random(), random()],
             #      rand_seed=rand_time(), quiet=False)
 
-        lt_a.display()
-        lt_b.display()
-        lt_c.display()
+        # lt_a.display()
+        # lt_b.display()
+        # lt_c.display()
         # lt_d.display()
 
         # Uncomment the next 4 lines below if you want, but not
@@ -94,8 +94,8 @@ def main(*args, **kwargs) -> int:
         # with n=36, m=42, threads=16 on a Ryzen 7 3700X @ 2.6-4.5Ghz using the
         # seed=1644121893 with gaussian prob settings of [0.25, 0.4]
         lt_a.get_spin_energy(BJs, total_time, quiet=False)
-        lt_b.get_spin_energy(BJs, total_time, quiet=False)
-        lt_c.get_spin_energy(BJs, total_time, quiet=False)
+        # lt_b.get_spin_energy(BJs, total_time, quiet=False)
+        # lt_c.get_spin_energy(BJs, total_time, quiet=False)
         # lt_d.get_spin_energy(BJs, total_time, quiet=False)
 
         return(0)
