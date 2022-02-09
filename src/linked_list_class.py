@@ -30,48 +30,6 @@ MAX_INT = pow(2, 31) - 1
 r_str: str = ['-0.0']
 
 
-def func(n, m, t: int) -> list:
-    try:
-        t = int(t)
-        area = int(n * m)
-
-        if not (MAX_INT > area > MIN_INT):
-            raise ValueError('Input n and m are too large!')
-        if t > area:
-            return(0)
-        elif t == area:
-            return(1)
-
-        test = int(0)
-        div = int(1)
-        div_overflow = int(0)
-        OF_on = int(0)
-        prev = int(0)
-
-        while True:
-            test = int(t * div_overflow) + int(t << div)
-
-            if prev > area and test > area:
-                return(int((t << div) / t + div_overflow))
-
-            if test == area:
-                return(int((t << div) / t + div_overflow))
-
-            elif test < area:
-                prev = test
-                div += 1
-                continue
-
-            elif prev < area and OF_on == 0:
-                div_overflow += int((t << (div - 1)) / t)
-                prev = test
-                # OF_on = 1
-                div = 1
-                continue
-    except Exception:
-        pass
-
-
 def Dividend_Remainder(n: int | Int,
                        m: int | Int,
                        t: int | Int) -> list[int | Int]:
@@ -158,7 +116,6 @@ def StripString(input: NDArray[number] | GNum | str,
         name = str(input)
     else:
         name = input
-    # check if the first character is a space
     checks = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
     name = name.translate({ord(c): None for c in '[](),'})
     for repl in replace:
@@ -199,7 +156,8 @@ def StripString(input: NDArray[number] | GNum | str,
     return(name)
 
 
-def round_num(input: Float, figures: Int,
+def round_num(input: Float,
+              figures: Int,
               round_fig: Optional[Int] = None) -> Float:
     """
         Purpose
@@ -351,16 +309,15 @@ class Node:
     def get_coords(self,
                    ReturnString: Optional[bool] = None) -> list[GNum] | str:
         if ReturnString is None:
-            return(self.coords.tolist())
+            return(self.coords)
         elif ReturnString is True:
             return(StripString(self.coords, r_str))
 
     def get_coords_and_spin(self) -> ndarray:
         return(np.array([*self.coords, self.spin_state]))
 
-    def get_combination(
-            self,
-            ReturnString: Optional[bool] = None) -> NDArray[Int] | str:
+    def get_combination(self,
+                        ReturnString: Optional[bool] = None) -> NDArray[Int] | str:
         """
             Parameters
             ----------
@@ -660,7 +617,7 @@ class LinkedLattice:
             Parameters
             ---------
             bounds : `list` | `ndarray` -> ArrayLike
-                - bounds for NN summation.
+                - Bounds for worker summation.
 
             Returns
             -------
@@ -718,7 +675,8 @@ class LinkedLattice:
         except Exception:
             PE.PrintException()
 
-    def __getitem__(self, __NodeIndex: list | NDArray) -> Node | None:
+    def __getitem__(self,
+                    __NodeIndex: list | NDArray | int | Int) -> Node | None:
         """
             Parameters
             ----------
@@ -735,6 +693,11 @@ class LinkedLattice:
                     No existing `Node` was found, return `None`
         """
         try:
+            if type(__NodeIndex) == Int | int:
+                coord = [
+                         __NodeIndex % self.__shape[0],
+                         int(__NodeIndex / self.__shape[0]]
+                return(self[coord]
             return(self.node_dict.get(StripString(__NodeIndex, r_str)))
         except Exception:
             PE.PrintException()
