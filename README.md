@@ -8,4 +8,5 @@ conda env create -f env_export.yml
 ```
 
 ## Note
-All multithreading appears to be working properly. If this is not the case for you, let me know.
+- All multithreading appears to be working properly. If this is not the case for you, let me know.
+- I reccomend commenting out the lines with lt_d in it, they run slower and technically the same as lt_a rn.
