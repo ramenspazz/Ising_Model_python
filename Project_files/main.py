@@ -28,8 +28,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 36
-        M = 42
+        N = 64
+        M = 64
         size = [N, M]
         total_time = 1000
         BJs = np.arange(0.1, 2, 0.1)  # noqa
@@ -37,9 +37,8 @@ def main(*args, **kwargs) -> int:
 
         lt_a = lt(1, size)
         lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
-        lt_b.set_time(total_time)
         lt_c = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
-        lt_d = lt(1, size, [[0.128, np.e], [3.02398, -np.e]])
+        # lt_d = lt(1, size, [[0.128, np.e], [3.02398, -np.e]])
 
         sys.stdout.write(
             '\nEnter 0 for seeded random or 1 for time based:\n')
@@ -57,8 +56,8 @@ def main(*args, **kwargs) -> int:
                            quiet=True)
             lt_c.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
                            quiet=True)
-            lt_d.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
-                           quiet=True)
+            # lt_d.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
+            #                quiet=True)
 
         else:
             sys.stdout.write("option 1 chosen.\n")
@@ -71,25 +70,25 @@ def main(*args, **kwargs) -> int:
                  rand_seed=rand_time(), quiet=False)
 
             lt_c.randomize(voids=False, probs=[
-                 random(100), random(100)],
+                 random(), random()],
                  rand_seed=rand_time(), quiet=False)
 
-            lt_d.randomize(voids=False, probs=[
-                 random(100), random(100)],
-                 rand_seed=rand_time(), quiet=False)
+            # lt_d.randomize(voids=False, probs=[
+            #      random(), random()],
+            #      rand_seed=rand_time(), quiet=False)
 
         lt_a.display()
         lt_b.display()
         lt_c.display()
-        lt_d.display()
+        # lt_d.display()
 
         # Uncomment the next 4 lines below if you want, but not
         # really a reason to as the metropolis algorithm gets
         # called anyways from the get_spin_energy function.
-        # SE_mtx = lt_a.metropolis(total_time, BJ, quiet=False)
-        # SE_mtx = lt_b.metropolis(total_time, BJ, quiet=False)
-        # SE_mtx = lt_c.metropolis(total_time, BJ, quiet=False)
-        # SE_mtx = lt_d.metropolis(total_time, BJ, quiet=False)
+        # lt_a.metropolis(total_time, BJ, quiet=False)
+        # lt_b.metropolis(total_time, BJ, quiet=False)
+        # lt_c.metropolis(total_time, BJ, quiet=False)
+        # lt_d.metropolis(total_time, BJ, quiet=False)
 
         # get_spin_energy is 100% complete in 34.30839276s on my home desktop
         # with n=36, m=42, threads=16 on a Ryzen 7 3700X @ 2.6-4.5Ghz using the
@@ -97,7 +96,7 @@ def main(*args, **kwargs) -> int:
         lt_a.get_spin_energy(BJs, total_time, quiet=False)
         lt_b.get_spin_energy(BJs, total_time, quiet=False)
         lt_c.get_spin_energy(BJs, total_time, quiet=False)
-        lt_d.get_spin_energy(BJs, total_time, quiet=False)
+        # lt_d.get_spin_energy(BJs, total_time, quiet=False)
 
         return(0)
     except KeyboardInterrupt:
