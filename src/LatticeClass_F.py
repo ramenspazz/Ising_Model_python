@@ -24,6 +24,7 @@ import random
 from random import randint
 import PrintException as PE
 import time
+import input_funcs as inF
 
 GNum = Union[number, Number]
 
@@ -180,7 +181,7 @@ class lattice_class:
             Computes the energy of the lattice at thermal equlibrium and
             relates this to T=J/(Beta*J*k) = 1/(Beta*k) ~ 1/(Beta*J)
         """
-        sys.stdout.write(
+        inF.print_stdout(
             "get_spin_energy is 000.0% complete...\r")
         if np.array_equiv(self.ZERO_mtx.shape,
                           np.array([__times, 2])) is False:
@@ -195,19 +196,22 @@ class lattice_class:
         else:
             times = __times
         for i, bj in enumerate(BJs):
+            inF.print_stdout(
+                f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
             SE_mtx = self.metropolis(times, bj)
             spins = SE_mtx[:, 0]
             energies = SE_mtx[:, 1]
             ms[i] = spins[-times:].mean()/len(self.internal_arr)
             E_means[i] = energies[-times:].mean()
             E_stds[i] = energies[-times:].std()
-            sys.stdout.write(
-                f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...\r")
+            inF.print_stdout(
+                f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
             # if quiet is False:
             #     self.plot_metrop(SE_mtx, bj)
         end = time.time()
-        sys.stdout.write(
-            f"get_spin_energy is 100% complete in {end-start:.8f} seconds!\n")
+        inF.print_stdout(
+            f"get_spin_energy is 100% complete in {end-start:.8f} seconds!",
+            end='\n')
         if quiet is False:
             self.plot_spin_energy(BJs, ms, E_stds)
         return(ms, E_means, E_stds)
@@ -241,7 +245,7 @@ class lattice_class:
                     spin_dn += val
             mean = DA.data_mean(SE_mtx[:, 0])
             stdev = DA.std_dev(SE_mtx[:, 0], mean, sample=False)
-            print(f"""
+            inF.print_stdout(f"""
             Average up sum of spins density is {
                 np.abs(spin_up) / num_nodes :.4f}%\n
             Average up sum of spins density is {
@@ -357,7 +361,8 @@ class lattice_class:
         try:
             if rand_seed is not None:
                 if quiet is not True:
-                    sys.stdout.write(f"Generating Seed = {rand_seed}\n")
+                    inF.print_stdout(f"Generating Seed = {rand_seed}",
+                                     end='\n')
                 random.seed(rand_seed)
                 for i in range(self.Lshape[0]):
                     if voids is True:

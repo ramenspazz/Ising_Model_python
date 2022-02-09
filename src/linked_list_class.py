@@ -4,7 +4,6 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
-from tabnanny import check
 # Typing imports
 from typing import Optional, Union, Callable
 from numbers import Number
@@ -20,8 +19,8 @@ import PrintException as PE
 import re
 import threading as td  # noqa TODO : use it later
 import multiprocessing
-from multiprocessing.dummy import Pool as ThreadPool  # noqa TODO : Use it later
 import concurrent.futures as CF
+import input_funcs as inF
 
 
 GNum = Union[number, Number]
@@ -59,7 +58,8 @@ def StripString(input: NDArray[number] | GNum | str,
     else:
         name = input
     checks = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    checks_int = ['0.0', '1.0', '2.0', '3.0', '4.0', '5.0', '6.0', '7.0', '8.0', '9.0']    
+    checks_int = ['0.0', '1.0', '2.0', '3.0', '4.0', '5.0', '6.0',
+                  '7.0', '8.0', '9.0']
     name = name.translate({ord(c): None for c in '[](),'})
     for repl in replace:
         __iter = re.finditer(repl, name)
@@ -100,6 +100,7 @@ def StripString(input: NDArray[number] | GNum | str,
         for num, NUM in zip(checks, checks_int):
             name = name.replace(NUM, num)
     return(name)
+
 
 def Dividend_Remainder(n: int | Int,
                        m: int | Int,
@@ -160,6 +161,7 @@ def Dividend_Remainder(n: int | Int,
                 continue
     except Exception:
         pass
+
 
 def round_num(input: Float,
               figures: Int,
@@ -226,9 +228,9 @@ class Node:
                 self.spin_state = spin_state
             else:
                 raise ValueError(
-                    f"""\nOptional parameter spin_state must be 1, 0, -1 or None!
-                        \nGot ({spin_state}, type={type(spin_state)})
-                        \n""")
+                    f"""Optional parameter spin_state must be 1, 0, -1 or None!
+                        Got ({spin_state}, type={type(spin_state)})
+                        """)
             if combination is not None:
                 self.combination: NDArray[Int] = np.array(combination)
             elif combination is None:
@@ -245,7 +247,7 @@ class Node:
     def __iter__(self) -> Node:
         try:
             if self.origin_node is None:
-                raise ValueError("\nIterator : origin node is None!\n")
+                raise ValueError("Iterator : origin node is None!")
             curr: Node = self.origin_node
             while curr is not None:
                 yield(curr)
@@ -284,7 +286,7 @@ class Node:
             else:
                 raise ValueError(f"""
                 Incorrent type for new_links!
-                Expected type Node or list[Node] but got {type(new_links)}!\n
+                Expected type Node or list[Node] but got {type(new_links)}!
                 """)
         except Exception:
             PE.PrintException()
@@ -324,7 +326,7 @@ class Node:
         return(np.array([*self.coords, self.spin_state]))
 
     def get_combination(self,
-                        ReturnString: Optional[bool] = None) -> NDArray[Int] | str:
+                        ReturnString: Optional[bool] = None) -> NDArray | str:
         """
             Parameters
             ----------
@@ -478,9 +480,9 @@ class LinkedLattice:
                 else:
                     break
                     raise IndexError(
-                        f"Index {i} is out of bounds in linked list!\n")
+                        f"Index {i} is out of bounds in linked list!")
             self.fll_generated = True
-            sys.stdout.write("Sucessfully generated fowardly linked list!\n")
+            inF.print_stdout("Sucessfully generated fowardly linked list!")
         except Exception:
             PE.PrintException()
 
@@ -513,13 +515,10 @@ class LinkedLattice:
         b1 = self.basis_arr[0]
         b2 = self.basis_arr[1]
         __rots = 6 if self.rots == 3 else self.rots
-
         if isinstance(self.rots, Float) is True:
-            rot_range = np.linspace(0, np.int64(10 * __rots),
-                                    8)
+            rot_range = np.linspace(0, np.int64(10 * __rots), 8)
         else:
             rot_range = range(__rots)
-
         for n in rot_range:
             c_rot = rotation_mtx(2 * np.pi * n / self.rots)
             temp1 = b1.dot(c_rot)
@@ -533,27 +532,29 @@ class LinkedLattice:
             np.array([0, 1]))
         theta = np.pi / __rots
         p_vec = self.y_length * b1
-
         if isinstance(self.rots, Float) is True:
-            rot_range = np.linspace(0, np.int64(10 * __rots),
+            rot_range = np.linspace(0,
+                                    np.int64(10 * __rots),
                                     np.int64(16 * __rots))
         else:
             rot_range = range(2 * __rots)
-
         for n in rot_range:
             temp3 = p_vec.dot(rotation_mtx(n*theta))
             for i in range(2):
                 temp3[i] = round_num(temp3[i], 10)
             coords[StripString(str(temp3), r_str)] = temp3
-
         return(coords)
 
     def is_neighbor(self, origin, possible_neighbor) -> bool:
         """
             Purpose
             -------
-            TODO
+            Checks the generated dictionary from __calcneighbor__ and returns
+            `True` or `False`.
         """
+        if np.array_equiv(possible_neighbor, origin):
+            return(False)
+
         for item in self.neighbors_ref.values():
             temp = np.arccos((possible_neighbor-origin).dot(origin) /
                              (norm(origin) * norm(possible_neighbor-origin)))
@@ -704,10 +705,12 @@ class LinkedLattice:
         """
         try:
             if type(__NodeIndex) == int:
-                coord = [__NodeIndex % self.__shape[0], int(__NodeIndex / self.__shape[0])]
+                coord = [__NodeIndex % self.__shape[0], int(
+                         __NodeIndex / self.__shape[0])]
                 return(self[coord])
             else:
-                retval  = self.node_dict.get(StripString(__NodeIndex, r_str, is_int=True))
+                retval = self.node_dict.get(StripString(
+                         __NodeIndex, r_str, is_int=True))
                 return(retval)
         except Exception:
             PE.PrintException()
@@ -744,7 +747,7 @@ class LinkedLattice:
             # neighbors a given node can have maximum.
             if child == parent:
                 raise ValueError("""
-                Can not append, Child and Parrent are the same!\n
+                Can not append, Child and Parrent are the same!
                 """)
             elif isinstance(child, list) and parent is not None:
                 name = StripString(parent.get_combination(), r_str)
@@ -786,10 +789,10 @@ class LinkedLattice:
             -------
             Prints the objects node dictionary, `node_dict` to `stdout`.
         """
-        sys.stdout.write('\n')
+        inF.print_stdout('')
         for key, val in self.node_dict.items():
-            sys.stdout.write(f"key={key}, value={val}\n")
-        sys.stdout.write('\n')
+            inF.print_stdout(f"key={key}, value={val}")
+        inF.print_stdout('')
 
     def set_basis(self, input_basis: NDArray[Float]) -> None:
         """
@@ -818,7 +821,7 @@ class LinkedLattice:
             neighbors: list[Node] = list()
             first_run = True
             check = None
-            sys.stdout.write("\n Generating, Please wait...\r")
+            inF.print_stdout(" Generating, Please wait...\r")
             while cur_ind[0] <= dims[0]-1:
                 while cur_ind[1] <= dims[1]-1:
                     if first_run:
@@ -939,7 +942,7 @@ class LinkedLattice:
 
                 cur_ind = cur_ind + np.array([1, 0])  # increment x
             self.make_linear_linkedlist()
-            sys.stdout.write(' Generation complete!            \n')
+            inF.print_stdout(' Generation complete!            ')
         except Exception:
             PE.PrintException()
 

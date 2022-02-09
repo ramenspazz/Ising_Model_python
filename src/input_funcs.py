@@ -1,11 +1,27 @@
-from ast import Num
 import tty
 import sys
 import termios
 import select
 from typing import Optional
 from numbers import Number
-import PrintException as PE
+
+blnk_ln = '                                                                   '
+
+
+def cls():
+    sys.stdout.write('\r' + blnk_ln)
+    sys.stdout.flush()  # important
+
+
+def print_stdout(msg: str, end: Optional[str] = None) -> None:
+    cls()
+    if '\n' in msg:
+        msg = msg.translate({ord(c): None for c in '\n'})
+    if end is not None:
+        sys.stdout.write('\r' + str(msg) + end)
+    else:
+        sys.stdout.write('\r' + str(msg))
+    sys.stdout.flush()  # important
 
 
 def setup_term(fd, when=termios.TCSAFLUSH):
