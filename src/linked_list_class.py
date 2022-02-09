@@ -4,9 +4,8 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
-from asyncio import as_completed
 # Typing imports
-from typing import Optional, Union, TYPE_CHECKING  # noqa F401
+from typing import Optional, Union
 from numbers import Number
 import numpy.typing as npt  # noqa
 from numpy.typing import NDArray
@@ -18,18 +17,123 @@ import numpy as np
 from numpy.linalg import norm
 import PrintException as PE
 import re
-import threading as td
+import threading as td  # noqa TODO : use it later
 import multiprocessing
-from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing.dummy import Pool as ThreadPool  # noqa TODO : Use it later
 import concurrent.futures as CF
-import time
 
 GNum = Union[number, Number]
-r_str: str = ['-0.0', '-0.', '-0']
+MIN_INT = pow(-2, 31)
+MAX_INT = pow(2, 31) - 1
+# r_str: str = ['-0.0', '-0.', '-0']
+r_str: str = ['-0.0']
+
+
+def func(n, m, t: int) -> list:
+    try:
+        t = int(t)
+        area = int(n * m)
+
+        if not (MAX_INT > area > MIN_INT):
+            raise ValueError('Input n and m are too large!')
+        if t > area:
+            return(0)
+        elif t == area:
+            return(1)
+
+        test = int(0)
+        div = int(1)
+        div_overflow = int(0)
+        OF_on = int(0)
+        prev = int(0)
+
+        while True:
+            test = int(t * div_overflow) + int(t << div)
+
+            if prev > area and test > area:
+                return(int((t << div) / t + div_overflow))
+
+            if test == area:
+                return(int((t << div) / t + div_overflow))
+
+            elif test < area:
+                prev = test
+                div += 1
+                continue
+
+            elif prev < area and OF_on == 0:
+                div_overflow += int((t << (div - 1)) / t)
+                prev = test
+                # OF_on = 1
+                div = 1
+                continue
+    except Exception:
+        pass
+
+
+def Dividend_Remainder(n: int | Int,
+                       m: int | Int,
+                       t: int | Int) -> list[int | Int]:
+    """
+        Purpose
+        -------
+        returns a list with the dividend and remainder of (nm)/t.
+
+        Returns
+        -------
+        Remainder : `int`
+            - Represents the remainder after division.
+
+        Dividend : `int`
+            - Represents a whole number p for n*m>=pt, where n, m, p, and t are
+            all integers.
+
+    """
+    try:
+        t = int(t)
+        area = int(n * m)
+
+        if not (MAX_INT > area > MIN_INT):
+            raise ValueError('Input n and m are too large!')
+        if t > area:
+            return(0)
+        elif t == area:
+            return(1)
+
+        test = int(0)
+        div = int(1)
+        div_overflow = int(0)
+        OF_on = int(0)
+        prev = int(0)
+
+        while True:
+            test = int(t * div_overflow) + int(t << div)
+
+            if prev > area and test > area:
+                return([int((t << div) / t + div_overflow),
+                        area-t*np.floor(area / t)])
+
+            if test == area:
+                return([int((t << div) / t + div_overflow),
+                        area-t*np.floor(area / t)])
+
+            elif test < area:
+                prev = test
+                div += 1
+                continue
+
+            elif prev < area and OF_on == 0:
+                div_overflow += int((t << (div - 1)) / t)
+                prev = test
+                # OF_on = 1
+                div = 1
+                continue
+    except Exception:
+        pass
 
 
 def StripString(input: NDArray[number] | GNum | str,
-replace: list[str]) -> str:  # noqa E128
+                replace: list[str]) -> str:
     """
         Purpose
         -------
@@ -95,7 +199,7 @@ replace: list[str]) -> str:  # noqa E128
 
 
 def round_num(input: Float, figures: Int,
-round_fig: Optional[Int] = None) -> Float:  # noqa E128
+              round_fig: Optional[Int] = None) -> Float:
     """
         Purpose
         -------
@@ -137,9 +241,9 @@ class Node:
         empty node, start all nodes as empty.
     """
     def __init__(self,
-        coords: NDArray[Float],  # noqa E128
-        combination: Optional[list | NDArray[Int]] = None,  # noqa E128
-        spin_state: Optional[int] = None) -> None:  # noqa E125
+                 coords: NDArray[Float],
+                 combination: Optional[list | NDArray[Int]] = None,
+                 spin_state: Optional[int] = None) -> None:
         """
             Parameters
             ----------
@@ -167,6 +271,7 @@ class Node:
                 self.combination: NDArray[Int] = None
             self.coords: NDArray[Float] = np.array(coords)
             self.links = list()
+            self.foward_link: Node = None
         except Exception:
             PE.PrintException()
 
@@ -219,14 +324,14 @@ class Node:
         except Exception:
             PE.PrintException()
 
-    def get_connected(self) -> 'list[Node]':
+    def get_connected(self) -> Node:
         """
             Returns
             -------
-            links : `list[Node]`
-                A list of nodes connected to `self`.
+            generator to next neighbor
         """
-        return(self.links)
+        for i in range(len(self.links)):
+            yield(self.links[i])
 
     def num_connected(self) -> int:
         """
@@ -237,15 +342,22 @@ class Node:
         """
         return(len(self.links))
 
+    def set_forward_link(self, next: Node) -> None:
+        self.foward_link = next
+
+    def get_foward_link(self) -> Node:
+        return(self.foward_link)
+
     def get_coords(self,
-    ReturnString: Optional[bool] = None) -> list[GNum] | str:  # noqa E128
+                   ReturnString: Optional[bool] = None) -> list[GNum] | str:
         if ReturnString is None:
             return(self.coords.tolist())
         elif ReturnString is True:
             return(StripString(self.coords, r_str))
 
-    def get_combination(self,
-    ReturnString: Optional[bool] = None) -> NDArray[Int] | str:  # noqa E128
+    def get_combination(
+            self,
+            ReturnString: Optional[bool] = None) -> NDArray[Int] | str:
         """
             Parameters
             ----------
@@ -330,9 +442,9 @@ class LinkedLattice:
         the spin state and `0` to represent a empty lattice position.
     """
     def __init__(self,
-        scale_factor: Float,  # noqa E128
-        __shape: list,  # noqa E128
-        basis_arr: Optional[NDArray[Float]] = None):  # noqa E128
+                 scale_factor: Float,
+                 __shape: list,
+                 basis_arr: Optional[NDArray[Float]] = None):
         """
             Parameters
             ----------
@@ -382,6 +494,51 @@ class LinkedLattice:
         self.__shape = __shape
         self.generate(__shape)
         self.visited = list()
+        self._sum: int | Int = int(0)
+        self.fll_generated = False
+
+    def make_linear_linkedlist(self) -> None:
+        try:
+            cur = self[0, 0]
+            for i in range(self.num_nodes):
+                coords_p1 = [
+                        (i+1) % self.__shape[0],
+                        int((i+1) / self.__shape[0])]
+                next_node = self[coords_p1]
+                if next_node is not None:
+                    cur.set_forward_link(next_node)
+                    cur = next_node
+                else:
+                    break
+                    raise IndexError(
+                        f"Index {i} is out of bounds in linked list!\n")
+            self.fll_generated = True
+            sys.stdout.write("Sucessfully generated fowardly linked list!\n")
+        except Exception:
+            PE.PrintException()
+
+    def __iter__(self) -> Node:
+        curr: Node = self.origin_node
+        while curr is not None:
+            yield(curr)
+            curr = curr.get_foward_link()
+        return
+
+    def range(self, start: int, stop: int, step: Optional[int] = None):
+        curr: Node = self.origin_node
+        if step is None:
+            step = 1
+        curr: Node = self.origin_node
+        index_check = stop - start
+        index = 0
+        while curr is not None and index_check >= index:
+            yield(curr)
+            for i in range(step):
+                curr = curr.get_foward_link()
+                if curr is None:
+                    return
+            index += step
+        return
 
     def __calcneighbor__(self) -> dict:
         """
@@ -398,7 +555,7 @@ class LinkedLattice:
 
         if isinstance(self.rots, Float) is True:
             rot_range = np.linspace(0, np.int64(10 * __rots),
-                8)  # noqa E128
+                                    8)
         else:
             rot_range = range(__rots)
 
@@ -418,7 +575,7 @@ class LinkedLattice:
 
         if isinstance(self.rots, Float) is True:
             rot_range = np.linspace(0, np.int64(10 * __rots),
-                np.int64(16 * __rots))  # noqa E128
+                                    np.int64(16 * __rots))
         else:
             rot_range = range(2 * __rots)
 
@@ -438,13 +595,13 @@ class LinkedLattice:
         """
         for item in self.neighbors_ref.values():
             temp = np.arccos((possible_neighbor-origin).dot(origin) /
-            (norm(origin) * norm(possible_neighbor-origin)))  # noqa E128
+                             (norm(origin) * norm(possible_neighbor-origin)))
             temp = round_num(temp, 7, round_fig=10)
-            # print(temp)
+
             if temp == 0 or (1-temp/np.pi) < 1E-07:
                 return(False)
-            if (not (self.y_length == norm(possible_neighbor - origin))
-            or not (1 == norm(possible_neighbor - origin))):  # noqa E128
+            if ((self.y_length == norm(possible_neighbor - origin) is not True)
+                    or (1 == norm(possible_neighbor - origin) is not True)):
                 a = origin.dot(self.basis_arr)+item
                 b = possible_neighbor.dot(self.basis_arr)
                 for i in range(len(a)):
@@ -456,49 +613,122 @@ class LinkedLattice:
                 continue
         return(False)
 
-    def Sum(self):
+    def Sum(self, threads: Optional[int] = None) -> int | Int:
         sum = 0
-        for i in range(self.__shape[0]):
-            for j in range(self.__shape[1]):
-                sum += self[i, j].get_spin()
-        return(sum)
-
-    def Nearest_Neighbor(self) -> np.int256:
-        results = list()
-        cords = list()
-        nodes = list()
-        args_list = list()
-        sum: np.int256 = 0
-        visited: list[Node] = list()
-        wc = multiprocessing.cpu_count() - 1   
-        wc = wc if wc < self.num_nodes else self.num_nodes
-
-        for i in range(wc):
-            cords.append([i % self.__shape[0], int(i / self.__shape[1])])
-            cor = self[cords[len(cords)-1]]
-            if cor is not None:
-                nodes.append(cor)
-                continue
+        if threads is None:
+            tc = multiprocessing.cpu_count()  # threadcount
+        else:
+            tc = threads
+        bounds: list = list()
+        x = self.__shape[0]
+        y = self.__shape[1]
+        Div, Rem = Dividend_Remainder(x, y, tc)
+        if tc > 1:
+            if Rem == 0:
+                # tc evenly divides the area so split the alttice into
+                # tc instances of Div Nodes total.
+                for i in range(tc):
+                    lower = i*Div
+                    upper = (i+1)*Div - 1
+                    # print(lower, upper)
+                    bounds.append([lower, upper])
             else:
-                cords.pop()
-                continue
+                # create tc instances of Div size to sum
+                print(f'TODO : Rem={Rem}')
+                exit()
+        else:
+            print(f'TODO : Rem={Rem}')
 
-        with CF.ThreadPoolExecutor(max_workers=wc) as exe:
-            futures = {exe.submit(self.__NN_Worker__, _node, visited): _node for _node in nodes}
+        with CF.ThreadPoolExecutor(max_workers=tc) as exe:
+            futures = {exe.submit(
+                self.__Sum_Worker__,
+                bound): bound for bound in bounds}
             for future in CF.as_completed(futures):
-                cur_node = futures[future]
                 try:
                     data = future.result()
-                except Exception as e:
-                    print(e)
+                except Exception:
                     return(0)
                 else:
                     sum += data
+        return(sum)
 
+    def __Sum_Worker__(self, bounds: list | ndarray) -> int | Int:
+        """
+            Parameters
+            ---------
+            bounds : `list` | `ndarray` -> ArrayLike
+                - bounds for NN summation.
+
+            Returns
+            -------
+            spin_sum : `int` | `numpy.integer`
+                - This threads final parital sum to return.
+        """
+        # Begin by creating a visit list for keeping track of nodes we still
+        # need to visit and a visited list that will keep track of what has
+        # already been visited.
+        sum: np.int256 = 0
+        lower_B = bounds[0]
+        upper_B = bounds[1]
+
+        for node in self.range(lower_B, upper_B):
+            sum += node.get_spin()
+        return(sum)
+
+    def __thread_launcher_(self) -> int | Int:
+        pass
+
+    def Nearest_Neighbor(self, threads: Optional[int] = None) -> int | Int:
+        sum = 0
+        if threads is None:
+            tc = multiprocessing.cpu_count()  # threadcount
+        else:
+            tc = threads
+        bounds: list = list()
+        x = self.__shape[0]
+        y = self.__shape[1]
+        Div, Rem = Dividend_Remainder(x, y, tc)
+        if tc > 1:
+            if Rem == 0:
+                # tc evenly divides the area so split the alttice into
+                # tc instances of Div Nodes total.
+                for i in range(tc):
+                    lower = i*Div
+                    upper = (i+1)*Div - 1
+                    # print(lower, upper)
+                    bounds.append([lower, upper])
+            else:
+                # create tc instances of Div size to sum
+                print(f'TODO : Rem={Rem}')
+                exit()
+        else:
+            print(f'TODO : Rem={Rem}')
+
+        with CF.ThreadPoolExecutor(max_workers=tc) as exe:
+            futures = {exe.submit(
+                self.__NN_Worker__,
+                bound): bound for bound in bounds}
+            for future in CF.as_completed(futures):
+                try:
+                    data = future.result()
+                except Exception:
+                    return(0)
+                else:
+                    sum += data
+        return(sum)
+
+    def __NN_Worker__(self, bounds: list) -> int | Int:
+        sum: np.int256 = 0
+        lower_B = bounds[0]
+        upper_B = bounds[1]
+
+        for node in self.range(lower_B, upper_B):
+            for nbr in node.get_connected():
+                sum += nbr.spin_state
         return(sum)
 
     def __NNGeneratorRecursive__(self, _node: Node, spin_sum: np.int256,
-    visited: list[Node]) -> np.int256:  # noqa E128
+                                 visited: list[Node]) -> np.int256:
         """
             Parameters
             ---------
@@ -520,56 +750,21 @@ class LinkedLattice:
         for neighbor in neighbors:
             if neighbor not in visited:
                 visited.append(neighbor)
-                return(td.Thread(self.__NNGenerator__, {neighbor, spin_sum, visited}))
+                return(self.__NNGeneratorRecursive__(neighbor,
+                                                     spin_sum, visited))
             else:
                 continue
         return(spin_sum)
 
-    def __NN_Worker__(self, start_node: Node, visited: list) -> int | Int:
-        """
-            Parameters
-            ---------
-            start_node : `Node`
-                - Begining `Node` for the thread.
-
-            visited : `list`[`Node`]
-                - `list` of already used nodes
-            
-            Returns
-            -------
-            spin_sum : `int` | `numpy.integer`
-                - This threads final parital sum to return.
-        """
-        # Begin by creating a visit list for keeping track of nodes we still need to visit
-        # and a visited list that will keep track of what has already been visited.
-        spin_sum: np.int256 = 0
-        visit = list(start_node)
-        while True:
-            try:
-                # this works by breaking when the visit list is empty
-                cur = visit.pop()
-                visited.append(cur)
-            except IndexError:
-                # when the list is empty, break out of the while loop
-                break
-            cur_neighbors = cur.get_connected()
-            if not (cur.get_spin() == 0):
-                for nbr in cur_neighbors:
-                    if not nbr.get_spin() == 0:
-                        for nbr in cur_neighbors:
-                            temp = nbr.get_spin()
-                            if temp == 0:
-                                continue
-                            spin_sum += nbr.get_spin()
-            for nbr in cur_neighbors:
-                if nbr not in visited:
-                    visit.append(nbr)
-                else:
-                    continue
-        return(spin_sum)
+    def Nearest_Neighbor_Rec(self) -> int | Int:
+        visited: list[Node] = list()
+        spin_sum = int(0)
+        sum = self.__NNGeneratorRecursive__(self.origin_node,
+                                            spin_sum, visited)
+        return(sum)
 
     def __setitem__(self, __NodeIndex: list | NDArray,
-    __value: int) -> None:  # noqa E128
+                    __value: int) -> None:
         """
             Sets the `Node` spin value at `__NodeIndex` equal to the __value.
 
@@ -623,7 +818,7 @@ class LinkedLattice:
         return(self.num_nodes - self.num_voids)
 
     def append(self, child: list[Node] | Node,
-    parent: Optional[Node] = None) -> None:  # noqa E128
+               parent: Optional[Node] = None) -> None:
         """
             Add a Node to the lattice. Adds Node as the origin Node if no other
             Nodes exist. If passing a list Nodes with a specified parent, this
@@ -734,13 +929,13 @@ class LinkedLattice:
                     elif self[cur_ind] is None:
                         # create a node indexed by its basis combination
                         cur_cor = cur_ind.dot(self.basis_arr)
-                        CurNode = Node(cur_cor, cur_ind) # noqa
+                        CurNode = Node(cur_cor, cur_ind)
                     else:
                         # set the current node to a previously generated Node
                         CurNode = used.get(StripString(cur_ind, r_str))
 
                     # Begin checking and creating neighbors
-                    if cur_ind[0]+1 < dims[0]: # noqa
+                    if cur_ind[0]+1 < dims[0]:
                         xp1 = True
                         cor = cur_ind+xp
                         check = self[cor]
@@ -843,6 +1038,7 @@ class LinkedLattice:
                 cur_ind[1] = 0
 
                 cur_ind = cur_ind + np.array([1, 0])  # increment x
+            self.make_linear_linkedlist()
             sys.stdout.write(' Generation complete!            \n')
         except Exception:
             PE.PrintException()
@@ -860,53 +1056,3 @@ class LinkedLattice:
                 cur = Node(cur_cor, [i, j])
                 self.append(cur, last)
                 last = cur
-
-###########
-# Testing #
-###########
-# TODO
-# new = Node(0,0)
-# test.append(new)
-# basis_list = []
-# basis_list.append([0,1])
-# basis_list.append([1,0])
-# print(basis_list[0]+basis_list[1])
-# for i in range(4):
-#     for j in range(4):
-#         pass
-
-# test.append(node_list, new)
-# print(new.get_connected())
-# TODO
-
-# test = LinkedLattice(scale_factor=1,basis_arr=[[1, 0], [0.5, np.sqrt(3)/2]]) # noqa
-# test.generate([10, 10])
-# for item in test:
-#     print(item.get_coords())
-
-# new = Node(0, 0)
-# test.append(new)
-# old = new
-# for i in range(10):
-#     for j in range(10):
-#         if i == 0 and j == 0:
-#             continue
-#         else:
-#             new = Node([i, j], [i, j])
-#             test.append(new, parent=old)
-#             old = new
-
-# test[0, 1] = 1
-# print(test_node)
-# print(test_node.spin_state)
-# test.append(test_node, test_node)
-# testing append error for child and parent being the same
-
-# TODO
-
-    # print(item.get_connected())
-    # print('\n')
-
-# print(test[0, 0])
-# test.printdict()
-# TODO
