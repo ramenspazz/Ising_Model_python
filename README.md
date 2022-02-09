@@ -1,5 +1,5 @@
 # NOTE
-- Only square lattices whose area (n\*m) is a even divisor of the number of available CPU threads can currently be used.
+- All multithreading appears to work fine now. Let me know if other-wise.
 
 # Instructions
 Ran from command-line as python -O Project_files/main.py or from the included jupyter notebook.
