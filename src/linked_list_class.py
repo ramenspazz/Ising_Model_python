@@ -623,6 +623,7 @@ class LinkedLattice:
         x = self.__shape[0]
         y = self.__shape[1]
         Div, Rem = Dividend_Remainder(x, y, tc)
+
         if tc > 1:
             if Rem == 0:
                 # tc evenly divides the area so split the alttice into
@@ -634,10 +635,15 @@ class LinkedLattice:
                     bounds.append([lower, upper])
             else:
                 # create tc instances of Div size to sum
-                print(f'TODO : Rem={Rem}')
-                exit()
-        else:
-            print(f'TODO : Rem={Rem}')
+                # tc instances of Div Nodes total.
+                for i in range(tc):
+                    lower = i*Div
+                    upper = (i+1)*Div - 1
+                    bounds.append([lower, upper])
+                # append the extra
+                bounds.append((tc+1)*Div - 1, self.num_nodes - 1)
+        elif tc == 1:
+            bounds.append([0, self.num_nodes - 1])
 
         with CF.ThreadPoolExecutor(max_workers=tc) as exe:
             futures = {exe.submit(
@@ -699,10 +705,15 @@ class LinkedLattice:
                     bounds.append([lower, upper])
             else:
                 # create tc instances of Div size to sum
-                print(f'TODO : Rem={Rem}')
-                exit()
-        else:
-            print(f'TODO : Rem={Rem}')
+                # tc instances of Div Nodes total.
+                for i in range(tc):
+                    lower = i*Div
+                    upper = (i+1)*Div - 1
+                    bounds.append([lower, upper])
+                # append the extra
+                bounds.append((tc+1)*Div - 1, self.num_nodes - 1)
+        elif tc == 1:
+            bounds.append([0, self.num_nodes - 1])
 
         with CF.ThreadPoolExecutor(max_workers=tc) as exe:
             futures = {exe.submit(
@@ -725,42 +736,6 @@ class LinkedLattice:
         for node in self.range(lower_B, upper_B):
             for nbr in node.get_connected():
                 sum += nbr.spin_state
-        return(sum)
-
-    def __NNGeneratorRecursive__(self, _node: Node, spin_sum: np.int256,
-                                 visited: list[Node]) -> np.int256:
-        """
-            Parameters
-            ---------
-            _node : `Node`
-                cur node
-            spin_sum : `numpy`.`int256`
-                cur sum
-            visited : `list`[`Node`]
-                list of already used nodes
-        """
-        visited.append(_node)
-        neighbors = _node.get_connected()
-        if not _node.get_spin() == 0:
-            for neighbor in neighbors:
-                temp = neighbor.get_spin()
-                if temp == 0:
-                    continue
-                spin_sum += neighbor.get_spin()
-        for neighbor in neighbors:
-            if neighbor not in visited:
-                visited.append(neighbor)
-                return(self.__NNGeneratorRecursive__(neighbor,
-                                                     spin_sum, visited))
-            else:
-                continue
-        return(spin_sum)
-
-    def Nearest_Neighbor_Rec(self) -> int | Int:
-        visited: list[Node] = list()
-        spin_sum = int(0)
-        sum = self.__NNGeneratorRecursive__(self.origin_node,
-                                            spin_sum, visited)
         return(sum)
 
     def __setitem__(self, __NodeIndex: list | NDArray,
@@ -901,10 +876,6 @@ class LinkedLattice:
         try:
             if self.basis_arr is None:
                 raise ValueError("Error, Basis must first be defined!")
-            # elif isinstance(self.rots, Union[int, Int]) is not True:
-            #     # if the "symmetry" is irrational, use linear_generation
-            #     self.linear_generation(dims)
-            #     return
             cur_cor = np.array([0, 0])
             cur_ind = np.array([np.int64(0), np.int64(0)])
             CurNode = None

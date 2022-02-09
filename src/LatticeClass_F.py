@@ -239,7 +239,6 @@ class lattice_class:
                     spin_up += val
                 elif val < 0:
                     spin_dn += val
-            total = np.abs(spin_up) + np.abs(spin_dn) # noqa
             mean = DA.data_mean(SE_mtx[:, 0])
             stdev = DA.std_dev(SE_mtx[:, 0], mean, sample=False)
             print(f"""
