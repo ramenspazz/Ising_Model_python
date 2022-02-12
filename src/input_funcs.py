@@ -1,16 +1,63 @@
-import tty
+import platform
 import sys
-import termios
 import select
 from typing import Optional
 from numbers import Number
 
+plat = platform.system().lower()
+
+if plat == 'windows':
+    print('Windows System')
+    import msvcrt
+
+    def getch() -> str:
+        return(msvcrt.getch())
+
+elif plat == 'linux':
+    print('Linux System')
+    import tty
+    import termios
+
+    def getch(timeout: Optional[Number] = None) -> str:
+        """
+            Parameters
+            ----------
+            timeout : Optional[`Number`] strictly positive
+                Sets timeout for inactivity in seconds on Unix and Windows
+
+
+            Returns
+            -------
+            output : `str`
+                The key pressed
+
+            NOTES
+            -----
+            Only supports sockets on Windows.
+        """
+        if timeout is None:
+            timeout = None
+        elif timeout < 0:
+            raise ValueError('Timeout must be strictly positive!')
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            setup_term(fd)
+            try:
+                rw, wl, xl = select.select([fd], [], [], timeout)
+            except select.error:
+                return
+            if rw:
+                return sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+    def setup_term(fd, when=termios.TCSAFLUSH):
+        mode = termios.tcgetattr(fd)
+        mode[tty.LFLAG] = mode[tty.LFLAG] & ~(termios.ECHO | termios.ICANON)
+        termios.tcsetattr(fd, when, mode)
+
 blnk_ln = '                                                                   '
-
-
-def cls():
-    sys.stdout.write('\r' + blnk_ln)
-    sys.stdout.flush()  # important
 
 
 def print_stdout(msg: str, end: Optional[str] = None) -> None:
@@ -24,45 +71,9 @@ def print_stdout(msg: str, end: Optional[str] = None) -> None:
     sys.stdout.flush()  # important
 
 
-def setup_term(fd, when=termios.TCSAFLUSH):
-    mode = termios.tcgetattr(fd)
-    mode[tty.LFLAG] = mode[tty.LFLAG] & ~(termios.ECHO | termios.ICANON)
-    termios.tcsetattr(fd, when, mode)
-
-
-def getch(timeout: Optional[Number] = None) -> str:
-    """
-        Parameters
-        ----------
-        timeout : Optional[`Number`] strictly positive
-            Sets timeout for inactivity in seconds on Unix and Windows
-
-
-        Returns
-        -------
-        output : `str`
-            The key pressed
-
-        NOTES
-        -----
-        Only supports sockets on Windows.
-    """
-    if timeout is None:
-        timeout = None
-    elif timeout < 0:
-        raise ValueError('Timeout must be strictly positive!')
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        setup_term(fd)
-        try:
-            rw, wl, xl = select.select([fd], [], [], timeout)
-        except select.error:
-            return
-        if rw:
-            return sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+def cls():
+    sys.stdout.write('\r' + blnk_ln)
+    sys.stdout.flush()  # important
 
 
 def poll_key(check: Optional[list[str]] = None) -> str | list[bool, str]:

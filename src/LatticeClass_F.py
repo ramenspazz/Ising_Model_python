@@ -211,7 +211,7 @@ class lattice_class:
         end = time.time()
         inF.print_stdout(
             f"get_spin_energy is 100% complete in {end-start:.8f} seconds!",
-            end='\n')
+            end='\n\n')
         if quiet is False:
             self.plot_spin_energy(BJs, ms, E_stds)
         return(ms, E_means, E_stds)
