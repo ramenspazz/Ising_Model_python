@@ -1,5 +1,4 @@
-# Python version
-> 3.10.0
+# Python version used : 3.10.0
 
 # Instructions (UNIX and UNIX like systems)
 Install Anaconda for UNIX one of two ways: (WARNING, might need to be ran as sudo)
