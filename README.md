@@ -1,7 +1,6 @@
 # Instructions (UNIX and UNIX like systems)
 Install Anaconda for UNIX one of two ways: (WARNING, might need to be ran as sudo)
-```apt install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6```
-Or download and install from https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh.
+```apt install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6```, or download and install from https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh.
 
 Then use the env_export file provided in the root directory to install the enviroment VIA anaconda using the command:
 
@@ -9,17 +8,7 @@ Then use the env_export file provided in the root directory to install the envir
 conda env create -f env_export.yml
 ```
 
-Then run:
-```BASH
-conda activate PY10
-```
-
-Then finally run:
-```Bash
-python -O Project_files/main.py
-```
-
-Or... from the included jupyter notebook (do not reccomend).
+Then run ```conda activate PY10``` to activate the installed enviroment, then finally run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not reccomend).
 
 # Instructions if you are unfortunate enough to use Windows
 The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands. If you are a glutton for punishment and enjoy exercises in futility, read on.
@@ -28,10 +17,7 @@ The truly easiet way to do this on windows is to run the WSL2.0 tools for Window
 
 Download miniconda from the https://docs.conda.io/en/latest/miniconda.html.
 
-Then run from the installed anaconda powershell:
-```
-conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy
-```
+Then run from the installed anaconda powershell ```conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy```
 
 Then run the file main.py like so:
 ```
