@@ -37,7 +37,11 @@ IF YOU INSIST on using them with python 3.10.0, you need to change a registry ke
 # OSX...
 You might be able to run all this in the terminal, but my friend who is using OSX 12.2.1 (21D62) could not get it to run due to weird permissions issues with read and write to sys.stdout or sys.stderr which is really dumb... not to mention all the things that just randomly broke because, well, OSX thinks its special...
 
-Getta real operating system yoooo. Y U spend so much on a whole lot of proprietary nonsense that costs on average 3.2x an equivlant system? It honestly makes you look really computer ignorant.
+Getta real operating system yoooo. Y U spend so much on a whole lot of proprietary nonsense that costs on average 3.2x an equivlant system by a company that activly want to dismantle all forms of right to repair?
+
+# Stuff I feel I might as well just shove in here
+The right to repair:
+      > https://www.repair.org/stand-up/
 
 ## Note
 - All multithreading appears to be working properly. If this is not the case for you, let me know.
