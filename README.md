@@ -1,3 +1,6 @@
+# Python version
+> 3.10.0
+
 # Instructions (UNIX and UNIX like systems)
 Install Anaconda for UNIX one of two ways: (WARNING, might need to be ran as sudo)
 ```apt install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6```, or download and install from https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh.
@@ -27,7 +30,7 @@ Then activate the newly created python enviroment with ```conda activate <name h
       
 If you can get the jupyter notebook working, I do not recommend using it at all. It runs on average ~2x slower (I will show you my data if you dont believe me) than the main.py file. Save yourself the headache and just run the .py file. Jupyter notebooks suck and IDK why people want to use them what with all the overhead in them.
 
-IF YOU INSIST on using them with python 3.1, you need to change a registry key in Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath named ExecutablePath to the location of the conda env you created. This might not work and honestly isnt worth the time to get it to work.
+IF YOU INSIST on using them with python 3.10.0, you need to change a registry key in Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath named ExecutablePath to the location of the conda env you created. This might not work and honestly isnt worth the time to get it to work.
 
 # OSX...
 You might be able to run all this in the terminal, but my fiend using OSX 12.2.1 (21D62) could not get it to run due to weird permissions issues with read and write to sys.stdout or sys.stderr which is really dumb...
