@@ -1,5 +1,9 @@
 # Instructions (UNIX and UNIX like systems)
-Uses the env_export file provided to install the enviroment VIA anaconda using the command:
+Install Anaconda for UNIX one of two ways: (WARNING, might need to be ran as sudo)
+```apt install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6```
+Or download and install from https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh.
+
+Then use the env_export file provided in the root directory to install the enviroment VIA anaconda using the command:
 
 ```BASH
 conda env create -f env_export.yml
