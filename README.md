@@ -15,10 +15,10 @@ conda env create -f env_export.yml
 
 Then run ```conda activate PY10``` to activate the installed enviroment, then finally run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not reccomend).
 
-# Instructions if you are unfortunate enough to use Windows
+# Instructions if you are use Windows and are not UNIX shy
 The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands. If you are a glutton for punishment and enjoy exercises in futility, read on.
 
-# Instructions if you use Windows and are UNIX shy
+# Instructions if you use Windows and are UNIX shy, unfortunate
 
 Download miniconda from the https://docs.conda.io/en/latest/miniconda.html.
 
@@ -34,7 +34,7 @@ If you can get the jupyter notebook working, I do not recommend using it at all.
 
 IF YOU INSIST on using them with python 3.10.0, you need to change a registry key in Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath named ExecutablePath to the location of the conda env you created. This might not work and honestly isnt worth the time to get it to work.
 
-# OSX...
+# Im sorry OSX...
 You might be able to run all this in the terminal, but my friend who is using OSX 12.2.1 (21D62) could not get it to run due to weird permissions issues with read and write to sys.stdout or sys.stderr which is really dumb... not to mention all the things that just randomly broke because, well, OSX thinks its special...
 
 Getta real operating system yoooo. Y U spend so much on a whole lot of proprietary nonsense that costs on average 3.2x an equivlant system by a company that activly want to dismantle all forms of right to repair?
