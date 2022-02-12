@@ -1,4 +1,5 @@
 # Python version used : 3.10.0
+NOTE: will run on 3.9.5 (NOT 3.9.0) in windows but some things seem to act a little dodgy in edge cases. Unix is reccomended for all the nice and shiny python features. 
 
 # Instructions (UNIX and UNIX like systems)
 Install Anaconda for UNIX one of two ways: (WARNING, might need to be ran as sudo)
