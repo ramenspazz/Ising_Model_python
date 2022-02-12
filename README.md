@@ -17,9 +17,10 @@ The truly easiet way to do this on windows is to run the WSL2.0 tools for Window
 
 Download miniconda from the https://docs.conda.io/en/latest/miniconda.html.
 
-Then run from the installed anaconda powershell ```conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy```
+Then run from the installed anaconda powershell, run the command:
+```conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy```
 
-Then run the file main.py like so:
+Then activate the newly created python enviroment with ```conda activate <name here>``` and finally run the file main.py like so:
 ```
 <your path to the conda env> -O <the path to> main.py\main.py
 ```      
