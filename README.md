@@ -40,8 +40,7 @@ You might be able to run all this in the terminal, but my friend who is using OS
 Getta real operating system yoooo. Y U spend so much on a whole lot of proprietary nonsense that costs on average 3.2x an equivlant system by a company that activly want to dismantle all forms of right to repair?
 
 # Stuff I feel I might as well just shove in here
-The right to repair:
-      > https://www.repair.org/stand-up/
+The right to repair: https://www.repair.org/stand-up/
 
 ## Note
 - All multithreading appears to be working properly. If this is not the case for you, let me know.
