@@ -105,9 +105,9 @@ class lattice_class:
             if np.abs(self.Lshape[0]) > 0 and np.abs(self.Lshape[1]) > 0:
                 return(self.internal_arr.__getitem__(*args))
             else:
-                raise IndexError(f"""Index tup is out of range! tup={args[0]}
-                is greater than the max index of {
-                    self.Lshape[0]*self.Lshape[0]-1}!\n""")
+                raise IndexError(f"Index tup is out of range! tup={args[0]} is"
+                                 " greater than the max index of"
+                                 f"{self.Lshape[0]*self.Lshape[0]-1}!\n")
         except Exception:
             PE.PrintException()
 
@@ -211,7 +211,7 @@ class lattice_class:
         end = time.time()
         inF.print_stdout(
             f"get_spin_energy is 100% complete in {end-start:.8f} seconds!",
-            end='\n\n')
+            end='\n')
         if quiet is False:
             self.plot_spin_energy(BJs, ms, E_stds)
         return(ms, E_means, E_stds)
@@ -275,7 +275,8 @@ class lattice_class:
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
     def metropolis(self, times: int | Int, BJ: float | Float,
-                   quiet: Optional[bool] = None) -> ndarray:
+                   quiet: Optional[bool] = None,
+                   progress: Optional[bool] = None) -> ndarray:
         """
             Purpose
             -------
@@ -289,7 +290,10 @@ class lattice_class:
             SE_mtx = self.ZERO_mtx
             energy = self.internal_arr.__threadlauncher__(
                 self.internal_arr.__NN_Worker__)
-
+            if progress is True:
+                inF.print_stdout(
+                    'Computing Metropolis Algorithm with iterations'
+                    f'={times}...')
             for i in range(0, times):
                 # pick random point on array and flip spin
                 while True:
@@ -332,6 +336,8 @@ class lattice_class:
                 SE_mtx[i, 0] = spin
                 SE_mtx[i, 1] = energy
             # for i in range(0, times):
+            if progress is True:
+                inF.print_stdout('Metropolis Algorithm complete!')
             if quiet is False:
                 self.plot_metrop(SE_mtx, BJ)
             return(SE_mtx)

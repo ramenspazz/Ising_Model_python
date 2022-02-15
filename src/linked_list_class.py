@@ -22,6 +22,10 @@ import multiprocessing
 import concurrent.futures as CF
 import input_funcs as inF
 
+# ignore warning on line 564
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 
 GNum = Union[number, Number]
 MIN_INT = pow(-2, 31)
@@ -556,6 +560,7 @@ class LinkedLattice:
             return(False)
 
         for item in self.neighbors_ref.values():
+            # this line generates a runtime warning, but it is safe to ignore
             temp = np.arccos((possible_neighbor-origin).dot(origin) /
                              (norm(origin) * norm(possible_neighbor-origin)))
             temp = round_num(temp, 7, round_fig=10)
@@ -821,7 +826,7 @@ class LinkedLattice:
             neighbors: list[Node] = list()
             first_run = True
             check = None
-            inF.print_stdout(" Generating, Please wait...", end='\n')
+            inF.print_stdout(" Generating, Please wait...")
             while cur_ind[0] <= dims[0]-1:
                 while cur_ind[1] <= dims[1]-1:
                     if first_run:

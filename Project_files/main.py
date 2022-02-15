@@ -106,9 +106,9 @@ def main(*args, **kwargs) -> int:
             # Uncomment the next 4 lines below if you want, but not
             # really a reason to as the metropolis algorithm gets
             # called anyways from the get_spin_energy function.
-            lt_a.metropolis(total_time, BJ, quiet=False)
-            lt_b.metropolis(total_time, BJ, quiet=False)
-            lt_c.metropolis(total_time, BJ, quiet=False)
+            lt_a.metropolis(total_time, BJ, quiet=False, progress=True)
+            lt_b.metropolis(total_time, BJ, quiet=False, progress=True)
+            lt_c.metropolis(total_time, BJ, quiet=False, progress=True)
             # lt_d.metropolis(total_time, BJ, quiet=False)
 
             # get_spin_energy is 100% complete in 34.30839276s on my home

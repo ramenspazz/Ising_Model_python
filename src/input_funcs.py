@@ -6,14 +6,14 @@ from numbers import Number
 plat = platform.system().lower()
 
 if plat == 'windows':
-    print('Windows System')
+    print('Windows System\n')
 
     def getch() -> str:
         out = input()
         out.replace('\n', '')
         return(out)
 elif plat == 'linux':
-    print('Linux System')
+    print('Linux System\n')
 
     import tty
     import termios
