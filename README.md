@@ -15,6 +15,9 @@ conda env create -f env_export.yml
 
 Then run ```conda activate PY10``` to activate the installed enviroment, then finally run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not reccomend).
 
+# A quick note about developing python multithreaded programs
+If you use anything other than Unix, things act funny or system specific. Right now, I highly suggest using WSL2.0 if you really want to use windows, but thats a very bad option still.
+
 # Instructions if you're using Windows and are not UNIX shy
 The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands. If you are a glutton for punishment and enjoy exercises in futility, read on.
 
