@@ -15,10 +15,10 @@ conda env create -f env_export.yml
 
 Then run ```conda activate PY10``` to activate the installed enviroment, then finally run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not reccomend).
 
-# Instructions if you are use Windows and are not UNIX shy
+# Instructions if you are using Windows and are not UNIX shy
 The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands. If you are a glutton for punishment and enjoy exercises in futility, read on.
 
-# Instructions if you use Windows and are UNIX shy, unfortunate
+# Instructions if you using Windows and are UNIX shy, unfortunate
 
 Download miniconda from the https://docs.conda.io/en/latest/miniconda.html.
 
