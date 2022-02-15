@@ -431,12 +431,12 @@ class LinkedLattice:
             self.basis_arr: NDArray[Float] = basis_arr
             # Begin by calculating the inner-products of each possible
             # combination to use in the next step.
-            a = np.float128(self.basis_arr[0].dot(self.basis_arr[1]))
-            b = np.float128(self.basis_arr[0].dot(self.basis_arr[0]))
-            c = np.float128(self.basis_arr[1].dot(self.basis_arr[1]))
-            arg = np.float128(a / (np.sqrt(b) * np.sqrt(c)))
+            a = np.float64(self.basis_arr[0].dot(self.basis_arr[1]))
+            b = np.float64(self.basis_arr[0].dot(self.basis_arr[0]))
+            c = np.float64(self.basis_arr[1].dot(self.basis_arr[1]))
+            arg = np.float64(a / (np.sqrt(b) * np.sqrt(c)))
             # This is A*B/|AB|=cos(C), using the a, b and c above
-            __rots = np.float128(2*np.pi/np.arccos(arg))
+            __rots = np.float64(2*np.pi/np.arccos(arg))
             __ciel = np.ceil(__rots)
             __floor = np.floor(__rots)
             # d_up and d_dn are the percent change between the
@@ -445,11 +445,11 @@ class LinkedLattice:
             d_up = np.abs(1-__rots/__ciel)
             d_dn = np.abs(1-__rots/__floor)
             if d_dn < 10**(-12):
-                self.rots: int | np.float128 = int(np.floor(__rots))
+                self.rots: int | np.float64 = int(np.floor(__rots))
             elif d_up < 10**(-12):
-                self.rots: int | np.float128 = int(np.ceil(__rots))
+                self.rots: int | np.float64 = int(np.ceil(__rots))
             else:
-                self.rots: int | np.float128 = np.float128(__rots)
+                self.rots: int | np.float64 = np.float64(__rots)
         elif basis_arr is None:
             self.basis_arr: NDArray[Float] = np.array(
                 [[1, 0], [0, 1]])

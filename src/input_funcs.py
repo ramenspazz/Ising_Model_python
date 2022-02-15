@@ -3,18 +3,18 @@ import sys
 import select
 from typing import Optional
 from numbers import Number
-
 plat = platform.system().lower()
 
 if plat == 'windows':
     print('Windows System')
-    import msvcrt
 
     def getch() -> str:
-        return(msvcrt.getch())
-
+        out = input()
+        out.replace('\n', '')
+        return(out)
 elif plat == 'linux':
     print('Linux System')
+
     import tty
     import termios
 

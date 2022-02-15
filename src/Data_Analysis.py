@@ -28,11 +28,13 @@ from math import log10, floor
 
 def round_sig(x, sig=2):
     '''
-    Outputs a number truncated to {sig} significant figures. Defaults to two sig-figs.
+    Outputs a number truncated to {sig} significant figures. Defaults to two
+    sig-figs.
     '''
     # Source
     # https://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python
     return round(x, sig-int(floor(log10(abs(x))))-1)
+
 
 def ndarray_to_list(data_list):
     array = []
@@ -42,7 +44,7 @@ def ndarray_to_list(data_list):
         size = np.shape(data_list)
         for i in range(size[0]):
             for j in range(size[1]):
-                array.append(data_list[i,j])
+                array.append(data_list[i, j])
     else:
         for i, item in enumerate(data_list):
             if type(item) == list or type(item) == np.ndarray:
@@ -51,11 +53,12 @@ def ndarray_to_list(data_list):
                 array.append(item)
     return(array)
 
-def plot_2D(x_data, y_data, xaxis_name = None, yaxis_name = None, data_name=None):
+
+def plot_2D(x_data, y_data, xaxis_name=None, yaxis_name=None, data_name=None):
     '''
     Plots 2D data in a scatter-plot
     '''
-    fig, axs = plt.subplots(1,constrained_layout=True)
+    fig, axs = plt.subplots(1, constrained_layout=True)
 
     if data_name==None:
         plot_label = 'Data'

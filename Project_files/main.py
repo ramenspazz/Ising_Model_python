@@ -28,14 +28,14 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 12
-        M = 12
+        N = 64
+        M = 64
         size = [N, M]
         total_time = 1000
         a = 0.1
         b = 2
         step = 0.05
-        BJs = np.arange(20.1, 50.1, step)
+        BJs = np.arange(a, b, step)
         BJ = 0.1  # noqa
 
         lt_a = lt(1, size)
