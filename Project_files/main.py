@@ -28,8 +28,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 64
-        M = 64
+        N = 32
+        M = 32
         size = [N, M]
         total_time = 1000
         a = 0.1
@@ -48,7 +48,7 @@ def main(*args, **kwargs) -> int:
 
             output: str = inF.key_input(['0', '1', 'q'])
             if output == '0':
-                inF.print_stdout("option 0 chosen..\n")
+                inF.print_stdout("option 0 chosen.", end='\n')
                 # DOCtest seed = 1644121893
                 # good seed 1644144314
                 seed = 1644121893
@@ -62,7 +62,7 @@ def main(*args, **kwargs) -> int:
                 #                quiet=True)
 
             elif output == '1':
-                inF.print_stdout("option 1 chosen.\n")
+                inF.print_stdout("option 1 chosen.", end='\n')
                 lt_a.randomize(voids=True, probs=[
                     random(), random()],
                     rand_seed=rand_time(), quiet=False)
@@ -89,7 +89,7 @@ def main(*args, **kwargs) -> int:
             # lt_d.display()
 
             inF.print_stdout(
-                f"BJ range= [{a},{b}]. Steps= {step}. Change (y/n)?")
+                f"BJ range= [{a},{b}]. Steps= {step}. Change (y/n)? ")
 
             output = inF.key_input(['y', 'n'])
 
