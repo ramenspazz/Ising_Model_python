@@ -821,7 +821,7 @@ class LinkedLattice:
             neighbors: list[Node] = list()
             first_run = True
             check = None
-            inF.print_stdout(" Generating, Please wait...\r")
+            inF.print_stdout(" Generating, Please wait...", end='\n')
             while cur_ind[0] <= dims[0]-1:
                 while cur_ind[1] <= dims[1]-1:
                     if first_run:
@@ -942,7 +942,7 @@ class LinkedLattice:
 
                 cur_ind = cur_ind + np.array([1, 0])  # increment x
             self.make_linear_linkedlist()
-            inF.print_stdout(' Generation complete!            ')
+            inF.print_stdout(' Generation complete!', end='\n')
         except Exception:
             PE.PrintException()
 
