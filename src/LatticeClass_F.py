@@ -155,6 +155,7 @@ class lattice_class:
                     W.append(cur.get_spin())
             plt.scatter(U, V, c=W, cmap='viridis')
             plt.show()
+            plt.clf()
         except Exception:
             PE.PrintException()
 
@@ -199,7 +200,7 @@ class lattice_class:
         for i, bj in enumerate(BJs):
             inF.print_stdout(
                 f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
-            SE_mtx = self.metropolis(times, bj, save=False, auto_plot=False)
+            SE_mtx = self.metropolis(times, bj, save=False, auto_plot=False, quiet=True)
             spins = SE_mtx[:, 0]
             energies = SE_mtx[:, 1]
             ms[i] = spins[-times:].mean()/len(self.internal_arr)
@@ -234,6 +235,7 @@ class lattice_class:
             plt.savefig(fname)
         if auto_plot is True:
             plt.show()
+        plt.clf()
 
     def plot_metrop(self, SE_mtx: ndarray, BJ: list | ndarray,
                     times: Optional[int] = None,
@@ -289,11 +291,13 @@ class lattice_class:
             plt.savefig(fname)
         if auto_plot is True:
             plt.show()
+        plt.clf()
 
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
     def metropolis(self, times: int | Int, BJ: float | Float,
                    progress: Optional[bool] = None,
+                   quiet: Optional[bool] = False,
                    save: Optional[bool] = False,
                    auto_plot: Optional[bool] = True) -> ndarray:
         """
@@ -357,7 +361,8 @@ class lattice_class:
             # for i in range(0, times):
             if progress is True:
                 inF.print_stdout('Metropolis Algorithm complete!')
-            self.plot_metrop(SE_mtx, BJ, save=save, auto_plot=auto_plot)
+            if quiet is False:
+                self.plot_metrop(SE_mtx, BJ, save=save, auto_plot=auto_plot)
             return(SE_mtx)
         except Exception:
             PE.PrintException()
