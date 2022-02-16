@@ -1,5 +1,5 @@
 # Python version used : 3.10.0
-NOTE: will run on Python 3.9.5 (NOT 3.9.0) in windows but some things seem to act a little dodgy in edge cases. Unix is reccomended for all the nice and shiny python features.
+NOTE: will run on Python 3.9.5 (NOT 3.9.0) in Windows but some things seem to act a little dodgy in edge cases (programmer speak for not recommended). Unix is reccomended for all the nice and shiny python features.
 
 If at anytime you want to know what python version something will run with, on any operating system, run the command ```python --version``` in your powershell/cmd/terminal to print out the version of python that will be used for all calls to ```python``` on your system path.
 
