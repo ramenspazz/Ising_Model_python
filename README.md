@@ -8,9 +8,12 @@ Install Anaconda or miniconda for UNIX. I recommend using miniconda. (WARNING, s
 - Choose the correct version of miniconda for your distribution from https://docs.conda.io/en/latest/miniconda.html#linux-installers.
 - chmod +x the file and install
 
-Then use the env_export file provided in the root directory to install the enviroment VIA anaconda using the command ```conda env create -f env_export.yml```.
+Setting up the enviroment:
+- Use the ```env_export.yml``` file provided in the root directory of the project to install the enviroment VIA miniconda using the command ```conda env create -f env_export.yml```.
+- Run ```conda activate PY10``` to activate the installed enviroment
 
-Next, run ```conda activate PY10``` to activate the installed enviroment and then finally run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not recommend).
+Running the program:
+- Run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not recommend).
 
 # Instructions if you're using Windows and are not UNIX shy
 Install WSL2.0:
@@ -29,8 +32,7 @@ Install miniconda on ubuntu:
 - Run the file with the command ```./Miniconda3-latest-Linux-x86_64.sh```.
 - Follow the prompts (default is fine for this usage) and select yes at the end of the installation to instantize the new installation.
 
-Follow the Unix instructions from here, but make sure you are in your home folder before starting by running the command : cd ```/home/<your user name>```
-WSL for some reason doesnt set the default directory to your home folder in some test cases I have looked into.
+Follow the Unix instructions from §(Setting up the enviroment), but make sure you are in your home folder before starting by running the command : cd ```/home/<your user name here>```. WSL for some reason doesnt set the default directory to your home folder in some test cases I have looked into.
 
 # Instructions if you're using Windows and are UNIX shy
 Note: On my Windows test setup, Microsoft is deleting python as donwloaded from anaconda and miniconda right now in order to push their own version of python 3.10 on the windows store. This is BS and why I recomend using WSL instead.
