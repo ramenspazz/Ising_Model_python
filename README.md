@@ -27,7 +27,9 @@ If you can get it running in native Windows then awesome, please let me know, bu
 You have been warned.
 
 # Instructions if you're using Windows and are not UNIX shy
-The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands. If you are a glutton for punishment and enjoy exercises in futility, read on.
+The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands.
+
+If you are a glutton for punishment and enjoy exercises in futility, read on.
 
 # Instructions if you're using Windows and are UNIX shy
 
@@ -40,10 +42,11 @@ Then activate the newly created python enviroment with ```conda activate <name h
 ```
 <your path to the conda env> -O <the path to> main.py\main.py
 ```
+Next set your launcher with your program of choice to be the anaconda powershell launcher and you are done!
 
-If you can get the jupyter notebook working, I do not recommend using it at all. It runs on average ~2x slower (I will show you my data if you dont believe me) than the main.py file. Save yourself the headache and just run the .py file. Jupyter notebooks suck and IDK why people want to use them what with all the overhead in them.
+If you can get the jupyter notebook working, I do not recommend using it at all. It runs on average ~2x slower (I will show you my data if you don't believe me) than the main.py file. Save yourself the headache and just run the .py file. Jupyter notebooks suck and IDK why people want to use them what with all the overhead in them.
 
-IF YOU INSIST on using them with python 3.10.0, you need to change a registry key in Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath named ExecutablePath to the location of the conda env you created. This might not work and honestly isnt worth the time to get it to work.
+IF YOU INSIST on using them with python 3.10.0, you need to change a registry key in ```Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath``` named ```ExecutablePath``` to the location of the conda env you created. This might not work and honestly isn't worth the time to get it to work.
 
 ## Note
 - All multithreading appears to be working properly. If this is not the case for you, let me know.
