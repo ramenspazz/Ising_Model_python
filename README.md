@@ -24,14 +24,32 @@ In my test VM of Windows on my computer and on my USB bootable Windows installat
 
 If you can get it running in native Windows then awesome, please let me know, but it is not my experience with my testing VM and USB bootable that this works properly. My friend could get it working on his laptop, but I am unsure if the other threads were doing work or not, I was not able to test that, only verify that the program ran and the expected output was generated for the program test case.
 
+WSL displays these bugs as well but still runs fine, and it is infuriating :<
+
 You have been warned.
 
 # Instructions if you're using Windows and are not UNIX shy
-The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands.
+Install WSL2.0:
+- Open powershell elevated as admin and run the command ```wsl --install```, then restart when prompted to.
+- Upon reboot and logging back into Windows, a command prompt will pop up eventually. Wait for the install to finish.
+- Then in this prompt window, setup your username and password.
 
-If you are a glutton for punishment and enjoy exercises in futility, read on.
+Setup miniconda:
+- Download in Windows: https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+- Then we transfer to this file to WSL by first opening a Windows explorer instance at the WSL installation directory by running the command (in the WSL window) ```explorer.exe .```.
+- Next, drag and drop the previously downloaded file to the directory of your choice (I recomend somewhere in your home folder located at ```/home/<your user name>```.
+
+Install miniconda on ubuntu:
+- Begin by locating the directory and setting the current directory (```cd <directory>```) to the location of the file ```Miniconda3-latest-Linux-x86_64.sh```.
+- Run the command ```sudo chmod +x Miniconda3-latest-Linux-x86_64.sh``` to enable the file to be ran.
+- Run the file with the command ```./Miniconda3-latest-Linux-x86_64.sh```.
+- Follow the prompts (default is fine for this usage) and select yes at the end of the installation to instantize the new installation.
+
+Follow the Unix instructions from here, but make sure you are in your home folder before starting by running the command : cd ```/home/<your user name>```
+WSL for some reason doesnt set the default directory to your home folder in some test cases I have looked into.
 
 # Instructions if you're using Windows and are UNIX shy
+Note: On my Windows test setup, Microsoft is deleting python as donwloaded from anaconda and miniconda right now in order to push their own version of python 3.10 on the windows store. This is BS and why I recomend using WSL instead.
 
 Download miniconda from the https://docs.conda.io/en/latest/miniconda.html.
 
