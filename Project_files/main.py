@@ -142,7 +142,7 @@ def main(*args, **kwargs) -> int:
             # lt_d.get_spin_energy(BJs, total_time, quiet=False)
     except KeyboardInterrupt:
         inF.cls()
-        inF.print_stdout("Keyboard Interrupt...", end='\n')
+        inF.print_stdout("Keyboard Interrupt, closing...", end='\n')
         exit()
     except Exception:
         PE.PrintException()
