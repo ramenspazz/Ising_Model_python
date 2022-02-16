@@ -18,9 +18,11 @@ Then run ```conda activate PY10``` to activate the installed enviroment, then fi
 # A quick note about using windows and existing bugs that stem from Microsoft depending on your runtime setup (network-boot vs usb launched vs native OS vs VM)
 TL;DR
 
-> Windows sucks for program development, bugs currently exist that Microsoft isnt willing to fix
+> Windows sucks for program development, bugs currently exist that Microsoft isnt willing to fix.
 
-In my test VM of Windows on my computer and on my USB bootable Windows installation for testing, the multithreading library in python correctly launches the required number of threads, but in Microsoft Windows some threads are locked by the global interpreter lock (GIL) and thus do no work. This causes 16 threads to launch, but only 6 of them to do work and can cause race conditions and hanging. This issue does not exist in OSX or UNIX. You have been warned. Microsoft doesnt really care about python development... :<
+In my test VM of Windows on my computer and on my USB bootable Windows installation for testing, the multithreading library in python correctly launches the required number of threads, but in Microsoft Windows some threads are locked by the global interpreter lock (GIL) and thus do no work. This causes 16 threads to launch, but only 6 of them to do work and can cause race conditions and hanging. This issue does not exist in OSX or UNIX. If you can get it running in native Windows then awesome, please let me know, but it is not my experience with my testing VM and USB bootable that this works properly. My friend could get it working on his laptop, but I am unsure if the other threads were doing work or not, I was not able to test that, only verify that the program ran and the expected output was generated for the program test case.
+
+You have been warned.
 
 # Instructions if you're using Windows and are not UNIX shy
 The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands. If you are a glutton for punishment and enjoy exercises in futility, read on.
