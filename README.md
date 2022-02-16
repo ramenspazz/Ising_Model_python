@@ -30,7 +30,7 @@ If at anytime you want to know what python version something will run with, on a
 - Run the file with the command ```./Miniconda3-latest-Linux-x86_64.sh```.
 - Follow the prompts (default is fine for this usage) and select yes at the end of the installation to instantize the new installation.
 
-Follow the Unix instructions from §(Setting up the enviroment), but make sure you are in your home folder before starting by running the command : cd ```/home/<your user name here>```. WSL for some reason doesnt set the default directory to your home folder in some test cases I have looked into.
+Follow the Unix instructions from §([Setting up the enviroment](https://github.com/ramenspazz/Ising_Model_python#setting-up-the-enviroment)), but make sure you are in your home folder before starting by running the command : cd ```/home/<your user name here>```. WSL for some reason doesnt set the default directory to your home folder in some test cases I have looked into.
 
 # Instructions if you're using Windows and are UNIX shy
 > Note: On my Windows test setup, Microsoft is deleting python as donwloaded from anaconda and miniconda (not WSL) right now in order to push their own version of python 3.10 on the windows store. This is BS and why I recomend using WSL instead.
