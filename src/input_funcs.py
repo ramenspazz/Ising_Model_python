@@ -57,10 +57,25 @@ elif plat == 'linux':
         mode[tty.LFLAG] = mode[tty.LFLAG] & ~(termios.ECHO | termios.ICANON)
         termios.tcsetattr(fd, when, mode)
 
-blnk_ln = '                                                                   '
+blnk_ln = ('                                                                 '
+           '                                                                 ')
 
 
 def print_stdout(msg: str, end: Optional[str] = None) -> None:
+    """
+        Purpose
+        -------
+        Prints to stdout and returns the cursor to the begining of the line
+        after printing.
+
+        Parameters
+        ----------
+        msg : `str`
+            - The message to print. \\n is removed from the string.
+        end : Optional[`str`]
+            - Ending `str` to append. Can be anything including a \\n as long
+            as its a `str`.
+    """
     cls()
     if '\n' in msg:
         msg = msg.translate({ord(c): None for c in '\n'})
@@ -72,6 +87,12 @@ def print_stdout(msg: str, end: Optional[str] = None) -> None:
 
 
 def cls():
+    """
+        Purpose
+        -------
+        Clears the current line in the terminal with whitespace and carriage
+        returns to the begining of the line.
+    """
     sys.stdout.write('\r' + blnk_ln)
     sys.stdout.flush()  # important
 
@@ -103,6 +124,22 @@ def poll_key(check: Optional[list[str]] = None) -> str | list[bool, str]:
 
 
 def key_input(check: list[str]) -> str:
+    """
+        Purpose
+        -------
+        Collects a key input from the terminal and returns the key if and only
+        if it matches a string in the check parameter.
+
+        Parameters
+        ----------
+        check ; `list`[`str`]
+            - A list containing strings to check the keyboard input against.
+
+        Returns
+        -------
+        out : `str`
+            - The pressed key matching an entry from the check list.
+    """
     out = [False, '']
     while out[0] is not True:
         out = poll_key(check)

@@ -174,7 +174,8 @@ class lattice_class:
     def get_spin_energy(self,
                         BJs: list | ndarray,
                         __times: Optional[int] = None,
-                        quiet: Optional[bool] = True) -> list:
+                        save: Optional[bool] = False,
+                        auto_plot: Optional[bool] = True) -> list:
         """
             Purpose
             -------
@@ -198,7 +199,7 @@ class lattice_class:
         for i, bj in enumerate(BJs):
             inF.print_stdout(
                 f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
-            SE_mtx = self.metropolis(times, bj)
+            SE_mtx = self.metropolis(times, bj, save=False, auto_plot=False)
             spins = SE_mtx[:, 0]
             energies = SE_mtx[:, 1]
             ms[i] = spins[-times:].mean()/len(self.internal_arr)
@@ -206,18 +207,19 @@ class lattice_class:
             E_stds[i] = energies[-times:].std()
             inF.print_stdout(
                 f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
-            # if quiet is False:
-            #     self.plot_metrop(SE_mtx, bj)
         end = time.time()
         inF.print_stdout(
             f"get_spin_energy is 100% complete in {end-start:.8f} seconds!",
             end='\n')
-        if quiet is False:
-            self.plot_spin_energy(BJs, ms, E_stds)
+        self.plot_spin_energy(BJs, ms, E_stds, save=save, auto_plot=auto_plot,
+                              times=times)
         return(ms, E_means, E_stds)
 
     def plot_spin_energy(self, bjs: ndarray,
-                         a: ndarray | list, c: ndarray | list) -> None:
+                         a: ndarray | list, c: ndarray | list,
+                         save: Optional[bool] = False,
+                         auto_plot: Optional[bool] = True,
+                         times: Optional[int] = None) -> None:
 
         fig, (ax1, ax2) = plt.subplots(1, 2)
         ax1.plot(1/bjs, a, 'o--', label=r"<m> vs $\left(\frac{k}{J}\right)T$")
@@ -225,9 +227,20 @@ class lattice_class:
         ax2.plot(1/bjs, c*bjs, 'x--', label=r"""
         $C_V / k^2$ vs $\left(\frac{k}{J}\right)T$'""")
         ax2.legend()
-        plt.show()
+        if save is True:
+            fname = ('SpinEnergy' + str(self.Lshape) + '_' +
+                     str(self.internal_arr.rots) + '_' + str(bjs) + '_' +
+                     str(times) + '.png')
+            plt.savefig(fname)
+        if auto_plot is True:
+            plt.show()
+        plt.clf()
 
-    def plot_metrop(self, SE_mtx, BJ, quiet=True):
+    def plot_metrop(self, SE_mtx: ndarray, BJ: list | ndarray,
+                    times: Optional[int] = None,
+                    quiet: Optional[bool] = True,
+                    save: Optional[bool] = False,
+                    auto_plot: Optional[bool] = True) -> None:
         """
         Parameters
         ----------
@@ -270,13 +283,21 @@ class lattice_class:
         ax.set_ylabel(r'Energy $E/J$')
         ax.grid()
         fig.tight_layout()
-        plt.show()
+        if save is True:
+            fname = ('Metropolis' + '_' + str(self.Lshape) + '_' +
+                     str(self.internal_arr.rots) + '_' + str(BJ) + '_' +
+                     str(times) + '.png')
+            plt.savefig(fname)
+        if auto_plot is True:
+            plt.show()
+        plt.clf()
 
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
     def metropolis(self, times: int | Int, BJ: float | Float,
-                   quiet: Optional[bool] = None,
-                   progress: Optional[bool] = None) -> ndarray:
+                   progress: Optional[bool] = None,
+                   save: Optional[bool] = False,
+                   auto_plot: Optional[bool] = True) -> ndarray:
         """
             Purpose
             -------
@@ -285,7 +306,7 @@ class lattice_class:
             itterations to preform.
         """
         try:
-            if not (self.time == times):
+            if self.time != times:
                 self.set_time(times)
             SE_mtx = self.ZERO_mtx
             energy = self.internal_arr.__threadlauncher__(
@@ -338,8 +359,7 @@ class lattice_class:
             # for i in range(0, times):
             if progress is True:
                 inF.print_stdout('Metropolis Algorithm complete!')
-            if quiet is False:
-                self.plot_metrop(SE_mtx, BJ)
+            self.plot_metrop(SE_mtx, BJ, save=save, auto_plot=auto_plot)
             return(SE_mtx)
         except Exception:
             PE.PrintException()

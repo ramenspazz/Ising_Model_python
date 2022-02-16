@@ -96,7 +96,7 @@ def StripString(input: NDArray[number] | GNum | str,
         if item == '':
             continue
         else:
-            if not (i == len(temp_str) - 1):
+            if i != len(temp_str) - 1:
                 name += item + ' '
             else:
                 name += item
@@ -381,7 +381,7 @@ class Node:
 
     def flip_test(self) -> int:
         try:
-            if not (self.spin_state == 0):
+            if self.spin_state != 0:
                 return(-1 if self.spin_state == 1 else -1)
             else:
                 return(0)
