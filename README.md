@@ -4,29 +4,13 @@ If at anytime you want to know what python version something will run with, on a
 > NOTE: will run on Python 3.9.5 (NOT 3.9.0) in Windows but some things seem to act a little dodgy in edge cases (programmer speak for not recommended). Unix is reccomended for all the nice and shiny python features.
 
 # Instructions (UNIX and UNIX like systems)
-Install Anaconda for UNIX one of two ways: (WARNING, might need to be ran as sudo)
-```apt install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6```, or download and install from https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh.
+Install Anaconda or miniconda for UNIX. I recommend using miniconda. (WARNING, some commands might need to be ran as sudo):
+- Choose the correct version of miniconda for your distribution from https://docs.conda.io/en/latest/miniconda.html#linux-installers.
+- chmod +x the file and install
 
-Then use the env_export file provided in the root directory to install the enviroment VIA anaconda using the command:
+Then use the env_export file provided in the root directory to install the enviroment VIA anaconda using the command ```conda env create -f env_export.yml```.
 
-```BASH
-conda env create -f env_export.yml
-```
-
-Then run ```conda activate PY10``` to activate the installed enviroment, then finally run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not reccomend).
-
-# A quick note about using windows and existing bugs that stem from Microsoft depending on your runtime setup (network-boot vs usb launched vs native OS vs VM)
-TL;DR
-
-> Windows sucks for program development, bugs currently exist that Microsoft isnt willing to fix.
-
-In my test VM of Windows on my computer and on my USB bootable Windows installation for testing, the multithreading library in python correctly launches the required number of threads, but in Microsoft Windows some threads are locked by the global interpreter lock (GIL) and thus do no work. This causes 16 threads to launch, but only 6 of them to do work and can cause race conditions and hanging. This issue does not exist in OSX or UNIX.
-
-If you can get it running in native Windows then awesome, please let me know, but it is not my experience with my testing VM and USB bootable that this works properly. My friend could get it working on his laptop, but I am unsure if the other threads were doing work or not, I was not able to test that, only verify that the program ran and the expected output was generated for the program test case.
-
-WSL displays these bugs as well but still runs fine, and it is infuriating :<
-
-You have been warned.
+Next, run ```conda activate PY10``` to activate the installed enviroment and then finally run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not recommend).
 
 # Instructions if you're using Windows and are not UNIX shy
 Install WSL2.0:
@@ -66,6 +50,10 @@ If you can get the jupyter notebook working, I do not recommend using it at all.
 
 IF YOU INSIST on using them with python 3.10.0, you need to change a registry key in ```Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath``` named ```ExecutablePath``` to the location of the conda env you created. This might not work and honestly isn't worth the time to get it to work.
 
-## Note
-- All multithreading appears to be working properly. If this is not the case for you, let me know.
+
+
+## Notes
 - I reccomend commenting out the lines with lt_d in it, they run slower and technically the same as lt_a rn.
+- In my test VM of Windows on my computer and on my USB bootable Windows installation for testing, the multithreading library in python correctly launches the required number of threads, but in Microsoft Windows some threads are locked by the global interpreter lock (GIL) and thus do no work. This causes 16 threads to launch, but only 6 of them to do work and can cause race conditions and hanging. This issue does not exist in OSX or UNIX. If you can get it running in native Windows then awesome, please let me know, but it is not my experience with my testing VM and USB bootable that this works properly. My friend could get it working on his laptop, but I am unsure if the other threads were doing work or not, I was not able to test that, only verify that the program ran and the expected output was generated for the program test case. WSL displays these bugs as well but still runs fine, and it is infuriating :<
+
+You have been warned.
