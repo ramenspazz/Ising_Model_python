@@ -234,7 +234,6 @@ class lattice_class:
             plt.savefig(fname)
         if auto_plot is True:
             plt.show()
-        plt.clf()
 
     def plot_metrop(self, SE_mtx: ndarray, BJ: list | ndarray,
                     times: Optional[int] = None,
@@ -290,7 +289,6 @@ class lattice_class:
             plt.savefig(fname)
         if auto_plot is True:
             plt.show()
-        plt.clf()
 
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
