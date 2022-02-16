@@ -15,13 +15,17 @@ conda env create -f env_export.yml
 
 Then run ```conda activate PY10``` to activate the installed enviroment, then finally run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not reccomend).
 
-# A quick note about developing python multithreaded programs
-If you use anything other than Unix, things act funny or system specific. Right now, I highly suggest using WSL2.0 if you really want to use windows, but thats a very bad option still.
+# A quick note about using windows and existing bugs that stem from Microsoft depending on your runtime setup (network-boot vs usb launched vs native OS vs VM)
+TL;DR
+
+> Windows sucks for program development, bugs currently exist that Microsoft isnt willing to fix
+
+In my test VM of Windows on my computer and on my USB bootable Windows installation for testing, the multithreading library in python correctly launches the required number of threads, but in Microsoft Windows some threads are locked by the global interpreter lock (GIL) and thus do no work. This causes 16 threads to launch, but only 6 of them to do work and can cause race conditions and hanging. This issue does not exist in OSX or UNIX. You have been warned. Microsoft doesnt really care about python development... :<
 
 # Instructions if you're using Windows and are not UNIX shy
 The truly easiet way to do this on windows is to run the WSL2.0 tools for Windows. LINK: https://docs.microsoft.com/en-us/windows/wsl/install. Then use the WSL terminal to run the UNIX and UNIX like systems commands. If you are a glutton for punishment and enjoy exercises in futility, read on.
 
-# Instructions if you're using Windows and are UNIX shy, unfortunate
+# Instructions if you're using Windows and are UNIX shy
 
 Download miniconda from the https://docs.conda.io/en/latest/miniconda.html.
 
@@ -31,8 +35,8 @@ Then run from the installed anaconda powershell, run the command:
 Then activate the newly created python enviroment with ```conda activate <name here>``` and finally run the file main.py like so:
 ```
 <your path to the conda env> -O <the path to> main.py\main.py
-```      
-      
+```
+
 If you can get the jupyter notebook working, I do not recommend using it at all. It runs on average ~2x slower (I will show you my data if you dont believe me) than the main.py file. Save yourself the headache and just run the .py file. Jupyter notebooks suck and IDK why people want to use them what with all the overhead in them.
 
 IF YOU INSIST on using them with python 3.10.0, you need to change a registry key in Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath named ExecutablePath to the location of the conda env you created. This might not work and honestly isnt worth the time to get it to work.
