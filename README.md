@@ -4,30 +4,28 @@ If at anytime you want to know what python version something will run with, on a
 > NOTE: will run on Python 3.9.5 (NOT 3.9.0) in Windows but some things seem to act a little dodgy in edge cases (programmer speak for not recommended). Unix is recommended for all the nice and shiny python features and somewhat required for some feautres to work properly.
 
 # Instructions (UNIX and UNIX like systems)
-Install Anaconda or miniconda for UNIX. I recommend using miniconda. (WARNING, some commands might need to be ran as sudo):
+## Install Anaconda or miniconda for UNIX. I recommend using miniconda. (WARNING, some commands might need to be ran as sudo):
 - Choose the correct version of miniconda for your distribution from https://docs.conda.io/en/latest/miniconda.html#linux-installers.
 - chmod +x the file and install
 
-Setting up the enviroment:
+## Setting up the enviroment:
 - Use the ```env_export.yml``` file provided in the root directory of the project to install the enviroment VIA miniconda using the command ```conda env create -f env_export.yml```.
 - Run ```conda activate PY10``` to activate the installed enviroment
 
-Running the program:
+## Running the program:
 - Run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not recommend).
 
 # Instructions if you're using Windows and are not UNIX shy
-Install WSL2.0:
+## Install WSL2.0:
 - Open powershell elevated as admin and run the command ```wsl --install```, then restart when prompted to.
 - Upon reboot and logging back into Windows, a command prompt will pop up eventually. Wait for the install to finish.
 - Then in this prompt window, setup your username and password.
 
-Setup miniconda:
+## Setup and install miniconda:
 - Download in Windows: https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 - Then we transfer to this file to WSL by first opening a Windows explorer instance at the WSL installation directory by running the command (in the WSL window) ```explorer.exe .```.
 - Next, drag and drop the previously downloaded file to the directory of your choice (I recomend somewhere in your home folder located at ```/home/<your user name>```.
-
-Install miniconda on ubuntu:
-- Begin by locating the directory and setting the current directory (```cd <directory>```) to the location of the file ```Miniconda3-latest-Linux-x86_64.sh```.
+- Next locate the directory you placed the file in and set the current directory (```cd <directory>```) to the location of the file ```Miniconda3-latest-Linux-x86_64.sh```.
 - Run the command ```sudo chmod +x Miniconda3-latest-Linux-x86_64.sh``` to enable the file to be ran.
 - Run the file with the command ```./Miniconda3-latest-Linux-x86_64.sh```.
 - Follow the prompts (default is fine for this usage) and select yes at the end of the installation to instantize the new installation.
@@ -35,7 +33,7 @@ Install miniconda on ubuntu:
 Follow the Unix instructions from §(Setting up the enviroment), but make sure you are in your home folder before starting by running the command : cd ```/home/<your user name here>```. WSL for some reason doesnt set the default directory to your home folder in some test cases I have looked into.
 
 # Instructions if you're using Windows and are UNIX shy
-Note: On my Windows test setup, Microsoft is deleting python as donwloaded from anaconda and miniconda right now in order to push their own version of python 3.10 on the windows store. This is BS and why I recomend using WSL instead.
+> Note: On my Windows test setup, Microsoft is deleting python as donwloaded from anaconda and miniconda (not WSL) right now in order to push their own version of python 3.10 on the windows store. This is BS and why I recomend using WSL instead.
 
 Download miniconda from the https://docs.conda.io/en/latest/miniconda.html.
 
