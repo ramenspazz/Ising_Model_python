@@ -1,9 +1,8 @@
+Important notes at the bottom of the README
 # Python version required: 3.10.0-3.10.2+
 If at anytime you want to know what python version something will run with, on any operating system, run the command ```python --version``` in your powershell/cmd/terminal to print out the version of python that will be used for all calls to ```python``` on your system path.
 
 > NOTE: will run on Python 3.9.5 (NOT 3.9.0) in Windows but some things seem to act a little dodgy in edge cases (programmer speak for not recommended). Unix is recommended for all the nice and shiny python features and somewhat required for some feautres to work properly.
-
-I recommend using the script file ```main.py``` instead of the jupyter notebook. Jupyter notebooks just needlessly complicate things.
 
 # Instructions (UNIX and UNIX like systems)
 ## Install Anaconda or miniconda for UNIX. I recommend using miniconda. (WARNING, some commands might need to be ran as sudo):
@@ -52,6 +51,7 @@ IF YOU INSIST on using them with python 3.10.0, you need to change a registry ke
 
 ## Notes
 - I reccomend commenting out the lines with lt_d in it, they run slower and technically the same as lt_a rn.
+- I recommend using the script file ```main.py``` instead of the jupyter notebook. Jupyter notebooks just needlessly complicate things. It YMMV when it comes to using Visual Studio Code jupyter enviroments (works fine for me), versus the jupyter provided enviroment (doesn't work fine for me).
 - In my test VM of Windows on my computer and on my USB bootable Windows installation for testing, the multithreading library in python correctly launches the required number of threads, but in Microsoft Windows some threads are locked by the global interpreter lock (GIL) and thus do no work. This causes 16 threads to launch, but only 6 of them to do work and can cause race conditions and hanging. This issue does not exist in OSX or UNIX. If you can get it running in native Windows then awesome, please let me know, but it is not my experience with my testing VM and USB bootable that this works properly. My friend could get it working on his laptop, but I am unsure if the other threads were doing work or not, I was not able to test that, only verify that the program ran and the expected output was generated for the program test case. WSL displays these bugs as well but still runs fine, and it is infuriating :<
 
 You have been warned.
