@@ -42,8 +42,7 @@ Download and install miniconda:
 - From the installed anaconda powershell, run the command ```conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy```.
 - Activate the newly created python enviroment with ```conda activate <name here>```.
 - Run the file main.py like so: ```<your path to the conda env> -O <the path to>\main.py```
-- 
-Next set your launcher with your program of choice to be the anaconda powershell launcher and you are done!
+- Finally set your launcher with your program of choice to be the anaconda powershell launcher and you are done!
 
 ## Notes
 - I reccomend commenting out the lines with lt_d in it, they run slower and technically the same as lt_a rn.
