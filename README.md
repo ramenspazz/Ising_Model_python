@@ -35,19 +35,15 @@ Follow the Unix instructions from §([Setting up the enviroment](https://github.
 
 # Instructions if you're using Windows and are UNIX shy
 > Note: On my Windows test setup, Microsoft is deleting python as downloaded from anaconda and miniconda (not WSL) right now in order to push their own version of python 3.10 on the windows store. This is BS and why I recomend using WSL instead.
+> Note: You can pip install the python3.10 dependencies but this is bad practice.
 
-Download miniconda from the https://docs.conda.io/en/latest/miniconda.html.
-
-Then run from the installed anaconda powershell, run the command:
-```conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy```
-
-Then activate the newly created python enviroment with ```conda activate <name here>``` and finally run the file main.py like so:
-```
-<your path to the conda env> -O <the path to>\main.py
-```
+Download and install miniconda:
+- Navigate to https://docs.conda.io/en/latest/miniconda.html and select the correct version for your system.
+- From the installed anaconda powershell, run the command ```conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy```.
+- Activate the newly created python enviroment with ```conda activate <name here>```.
+- Run the file main.py like so: ```<your path to the conda env> -O <the path to>\main.py```
+- 
 Next set your launcher with your program of choice to be the anaconda powershell launcher and you are done!
-
-IF YOU INSIST on using them with python 3.10.0, you need to change a registry key in ```Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath``` named ```ExecutablePath``` to the location of the conda env you created. This might not work and honestly isn't worth the time to get it to work.
 
 ## Notes
 - I reccomend commenting out the lines with lt_d in it, they run slower and technically the same as lt_a rn.
