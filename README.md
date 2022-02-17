@@ -4,7 +4,7 @@ If at anytime you want to know what python version something will run with, on a
 
 > NOTE: will run on Python 3.9.5 (NOT 3.9.0) in Windows but some things seem to act a little dodgy in edge cases (programmer speak for not recommended). Unix is recommended for all the nice and shiny python features and somewhat required for some feautres to work properly.
 
-# Instructions (UNIX and UNIX like systems)
+# Instructions (UNIX and UNIX like systems, like \*NIX A.K.A. OSX)
 ## Install Anaconda or miniconda for UNIX. I recommend using miniconda. (WARNING, some commands might need to be ran as sudo):
 - Choose the correct version of miniconda for your distribution from https://docs.conda.io/en/latest/miniconda.html#linux-installers.
 - chmod +x the file and install
