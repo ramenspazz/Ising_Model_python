@@ -13,8 +13,16 @@ If at anytime you want to know what python version something will run with, on a
 - Use the ```env_export.yml``` file provided in the root directory of the project to install the enviroment VIA miniconda using the command ```conda env create -f env_export.yml```.
 - Run ```conda activate PY10``` to activate the installed enviroment
 
-## Running the program:
-- Run ```python -O Project_files/main.py``` and the program should start... Or... start it from the included jupyter notebook (do not recommend).
+## Option 1: Running the py program:
+- Run ```python -O Project_files/main.py``` and the program should start or start it from the included jupyter notebook.
+## Option 2: Running the jupyter notebook
+> Note: if you use WSL for this, you need to start the jupyter notebook service as a computation server. Please read on jupyter's website how to do this.
+
+It is easiest to use VS code to set the computation kernel to the miniconda python venv. To do this in VS code:
+- Open the notebook in VS code
+- Hit ```ctrl+p``` to open the command pallet at the top center of your screen.
+- Type ```select notenook kernel``` and select the name of the python3.10 venv (PY10 if you used my yml file to generate your env).
+- Run the notebook
 
 # Instructions if you're using Windows and are not UNIX shy
 ## Install WSL2.0:
