@@ -3,6 +3,8 @@ If at anytime you want to know what python version something will run with, on a
 
 > NOTE: will run on Python 3.9.5 (NOT 3.9.0) in Windows but some things seem to act a little dodgy in edge cases (programmer speak for not recommended). Unix is recommended for all the nice and shiny python features and somewhat required for some feautres to work properly.
 
+I recommend using the script file ```main.py``` instead of the jupyter notebook. Jupyter notebooks just needlessly complicate things.
+
 # Instructions (UNIX and UNIX like systems)
 ## Install Anaconda or miniconda for UNIX. I recommend using miniconda. (WARNING, some commands might need to be ran as sudo):
 - Choose the correct version of miniconda for your distribution from https://docs.conda.io/en/latest/miniconda.html#linux-installers.
@@ -45,8 +47,6 @@ Then activate the newly created python enviroment with ```conda activate <name h
 <your path to the conda env> -O <the path to>\main.py
 ```
 Next set your launcher with your program of choice to be the anaconda powershell launcher and you are done!
-
-If you can get the jupyter notebook working, I do not recommend using it at all. It runs on average ~2x slower (I will show you my data if you don't believe me) than the main.py file. Save yourself the headache and just run the .py file. Jupyter notebooks suck and IDK why people want to use them what with all the overhead in them.
 
 IF YOU INSIST on using them with python 3.10.0, you need to change a registry key in ```Computer\HKEY_CURRENT_USER\SOFTWARE\Python\ContinuumAnalytics\InstallPath``` named ```ExecutablePath``` to the location of the conda env you created. This might not work and honestly isn't worth the time to get it to work.
 
