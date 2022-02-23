@@ -199,7 +199,8 @@ class lattice_class:
         for i, bj in enumerate(BJs):
             inF.print_stdout(
                 f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
-            SE_mtx = self.metropolis(times, bj, save=False, auto_plot=False, quiet=True)
+            SE_mtx = self.metropolis(times, bj, save=False, auto_plot=False,
+                                     quiet=True)
             spins = SE_mtx[:, 0]
             energies = SE_mtx[:, 1]
             ms[i] = spins[-times:].mean()/len(self.internal_arr)

@@ -20,8 +20,6 @@ import threading as td  # noqa TODO : use it later
 import multiprocessing
 import concurrent.futures as CF
 import input_funcs as inF
-import matplotlib.pyplot as plt
-
 # ignore warning on line 564
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -798,26 +796,14 @@ class LinkedLattice:
         b1 = self.basis_arr[0]
         # b2 = self.basis_arr[1]  # TODO: maybe include this too?
         __rots = int(6) if self.rots == 3 else self.rots
-        # __rots = self.rots
-        print(f"self.rots = {self.rots}, __rots= = {__rots}\n")
-
         if isinstance(self.rots, Float) is True:
             rot_range = np.linspace(0, np.int64(10 * __rots), 8)
         else:
             rot_range = range(__rots)
-
-        x_ = []
-        y_ = []
         for n in rot_range:
             c_rot = rotation_mtx(2 * np.pi * n / __rots)
             temp1 = round_num(b1.dot(c_rot), 10)
             coords[StripString(str(temp1), r_str)] = temp1
-
-        for coord in coords.values():
-            x_.append(coord[0])
-            y_.append(coord[1])
-        plt.scatter(x_, y_)
-        plt.show()
         return(coords)
 
     def is_neighbor(self, origin, possible_neighbor) -> bool:
