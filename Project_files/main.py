@@ -29,8 +29,8 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 16
-        M = 16
+        N = 128
+        M = 128
         size = [N, M]
         total_time = 1000
         a = 0.1
@@ -57,7 +57,8 @@ def main(*args, **kwargs) -> int:
 
         while True:
             inF.print_stdout(
-                'Enter 0 for seeded random or 1 for time based or q to quit: ')
+                'Enter 0 for seeded random or 1 to input probabilities'
+                ' or q to quit: ')
 
             output: str = inF.key_input(['0', '1', 'q'])
             if output == '0':
@@ -65,24 +66,28 @@ def main(*args, **kwargs) -> int:
                 # DOCtest seed = 1644121893
                 # good seed 1644144314
                 seed = 1644121893
-                lt_a.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
-                               quiet=False)
-                lt_b.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
-                               quiet=True)
-                lt_c.randomize(voids=True, probs=[0.25, 0.4], rand_seed=seed,
-                               quiet=True)
+                lt_a.randomize(voids=True, probs=[45, 45, 10],
+                               rand_seed=seed, quiet=False)
+                lt_b.randomize(voids=True, probs=[55, 40, 5],
+                               rand_seed=seed, quiet=False)
+                lt_c.randomize(voids=True, probs=[30, 65, 5],
+                               rand_seed=seed, quiet=False)
 
             elif output == '1':
                 inF.print_stdout("option 1 chosen.", end='\n')
-                lt_a.randomize(voids=True, probs=[
+                inF.print_stdout('Enable voids (y/n)?')
+                output = inF.key_input(['y', 'n'])
+                voids_enable = True if output == 'y' else False
+
+                lt_a.randomize(voids=voids_enable, probs=[
                     random(), random()],
                     rand_seed=rand_time(), quiet=False)
 
-                lt_b.randomize(voids=False, probs=[
+                lt_b.randomize(voids=voids_enable, probs=[
                      random(), random()],
                      rand_seed=rand_time(), quiet=False)
 
-                lt_c.randomize(voids=False, probs=[
+                lt_c.randomize(voids=voids_enable, probs=[
                      random(), random()],
                      rand_seed=rand_time(), quiet=False)
 
@@ -125,12 +130,12 @@ def main(*args, **kwargs) -> int:
             # # Uncomment the next 4 lines below if you want, but not
             # # really a reason to as the metropolis algorithm gets
             # # called anyways from the get_spin_energy function.
-            # lt_a.metropolis(total_time, BJ, progress=True,
-            #                 save=auto_save, auto_plot=auto_plot)
-            # lt_b.metropolis(total_time, BJ, progress=True,
-            #                 save=auto_save, auto_plot=auto_plot)
-            # lt_c.metropolis(total_time, BJ, progress=True,
-            #                 save=auto_save, auto_plot=auto_plot)
+            lt_a.metropolis(total_time, BJ, progress=True,
+                            save=auto_save, auto_plot=auto_plot)
+            lt_b.metropolis(total_time, BJ, progress=True,
+                            save=auto_save, auto_plot=auto_plot)
+            lt_c.metropolis(total_time, BJ, progress=True,
+                            save=auto_save, auto_plot=auto_plot)
             # # lt_d.metropolis(total_time, BJ, quiet=False)
 
             # get_spin_energy is 100% complete in 34.30839276s on my home

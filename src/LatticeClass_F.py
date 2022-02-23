@@ -217,16 +217,17 @@ class lattice_class:
         return(ms, E_means, E_stds)
 
     def plot_spin_energy(self, bjs: ndarray,
-                         a: ndarray | list, c: ndarray | list,
+                         ms: ndarray | list,
+                         E_stds: ndarray | list,
                          save: Optional[bool] = False,
                          auto_plot: Optional[bool] = True,
                          times: Optional[int] = None) -> None:
 
         fig, (ax1, ax2) = plt.subplots(1, 2)
-        ax1.plot(1/bjs, a, 'o--', label=r"<m> vs $\left(\frac{k}{J}\right)T$")
+        ax1.plot(1/bjs, ms, 'o--', label=r"<m> vs $\left(\frac{k}{J}\right)T$")
         ax1.legend()
-        ax2.plot(1/bjs, c*bjs, 'x--', label=r"""
-        $C_V / k^2$ vs $\left(\frac{k}{J}\right)T$'""")
+        ax2.plot(1/bjs, E_stds*bjs, 'x--',
+                 label=r"$C_V / k^2$ vs $\left(\frac{k}{J}\right)T$'")
         ax2.legend()
         if save is True:
             fname = ('SpinEnergy' + str(self.Lshape) + '_' +
@@ -310,7 +311,7 @@ class lattice_class:
                 self.set_time(times)
             SE_mtx = self.ZERO_mtx
             energy = self.internal_arr.__threadlauncher__(
-                self.internal_arr.__NN_Worker__)
+                self.internal_arr.__NN_Worker__, True)
             if progress is True:
                 inF.print_stdout(
                     'Computing Metropolis Algorithm with iterations'
@@ -351,7 +352,7 @@ class lattice_class:
                     self.internal_arr[rand_x, rand_y].flip_spin()
 
                 spin = self.internal_arr.__threadlauncher__(
-                    self.internal_arr.__Sum_Worker__)
+                    self.internal_arr.__Sum_Worker__, True)
                 energy += dE
 
                 SE_mtx[i, 0] = spin
@@ -378,42 +379,40 @@ class lattice_class:
 
             probs : `list`[`float`]
                 - list representing the probability of `1`, `0`, `-1`
-                where the two entries represent the the standard deviation
-                of the normal distribution, and the percentage that a spin
-                should be up or zero
+                where the first two entries represent the the mean and
+                standard-deviation of the normal distribution, and the
+                percentage that a spin should be a void if enabled.
 
             rand_seed : Optional[`int`]
                 - Seed value to seed random with.
         """
         try:
             if rand_seed is not None:
+                if sum(probs) != 100:
+                    raise ValueError('The sum of all probabilites must add to'
+                                     '100%!')
                 if quiet is not True:
                     inF.print_stdout(f"Generating Seed = {rand_seed}",
                                      end='\n')
+                tot_size = self.Lshape[0]*self.Lshape[1]
                 random.seed(rand_seed)
                 for i in range(self.Lshape[0]):
                     if voids is True:
+                        my_list = [-1]*probs[0] + [1]*probs[1] + [0]*probs[2]
                         for j in range(self.Lshape[1]):
-                            rand_num = random.gauss(0, probs[0])
-                            if np.abs(rand_num) < probs[1] and rand_num > 0:
-                                rand_num = 1
-                            elif np.abs(rand_num) < probs[1] and rand_num < 0:
-                                rand_num = -1
-                            else:
-                                rand_num = 0
-                            self[i, j] = rand_num
+                            rand_num = random.choice(my_list)
                             if rand_num == 0:
                                 self.internal_arr.num_voids += 1
-
-                    elif voids is False:
-                        for j in range(self.Lshape[1]):
-                            rand_num = random.gauss(0, probs[0])
-                            if rand_num > probs[1]:
-                                rand_num = 1
-                            else:
-                                rand_num = -1
                             self[i, j] = rand_num
-
+                    elif voids is False:
+                        my_list = [-1]*probs[0] + [1]*probs[1]
+                        for j in range(self.Lshape[1]):
+                            rand_num = random.choice(my_list)
+                            self[i, j] = rand_num
+            if self.internal_arr.num_voids == tot_size:
+                raise ValueError("All nodes are voids! Please choose different"
+                                 " values for your gaussian distribution, or"
+                                 " you\'re just reaaaaaally unlucky.")
             return(None)
         except Exception:
             PE.PrintException()

@@ -129,9 +129,9 @@ def Dividend_Remainder(n: int | Int,
         if not (MAX_INT > area > MIN_INT):
             raise ValueError('Input n and m are too large!')
         if t > area:
-            return(0)
+            return(0, area)
         elif t == area:
-            return(1)
+            return(1, 0)
 
         test = int(0)
         div = int(1)
@@ -219,7 +219,7 @@ def angle_between(v1, v2):
     """
     v1_u = np.linalg.norm(v1)
     v2_u = np.linalg.norm(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    return(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
 
 
 def distance_between(A: ndarray, B: ndarray) -> float | int:
@@ -336,11 +336,13 @@ class Node:
         try:
             if isinstance(new_links, Node) is True:
                 self.links.append(new_links)
+            elif isinstance(new_links, list) is True:
+                for item in new_links:
+                    self.links.append(item)
             else:
-                raise ValueError(f"""
-                Incorrent type for new_links!
-                Expected type Node or list[Node] but got {type(new_links)}!
-                """)
+                raise ValueError("Incorrent type for new_links!"
+                                 " Expected type Node or list[Node] but got "
+                                 f"{type(new_links)}!")
         except Exception:
             PE.PrintException()
 
@@ -351,7 +353,12 @@ class Node:
             generator to next neighbor
         """
         for i in range(len(self.links)):
-            yield(self.links[i])
+            # TODO: find the reason I need this line
+            # TODO: for some reason None is being added
+            # to the list of neighbors incorrectly.
+            # not a huge problem but not optimal.
+            if self.links[i] is not None:
+                yield(self.links[i])
 
     def num_connected(self) -> int:
         """
@@ -514,7 +521,8 @@ class LinkedLattice:
         self.num_voids: int = int(0)
         self.origin_node: Node = None
         self.__shape = __shape
-        self.generate(__shape)
+        self.generate()
+        self.__threadlauncher__(self.__generation_worker__, False)
         self.visited = list()
         self._sum: int | Int = int(0)
         self.fll_generated = False
@@ -558,9 +566,13 @@ class LinkedLattice:
             index += step
         return
 
+    # TODO analyse this function and include the generation function
+    # TODO was working on generation then got tired
     def __threadlauncher__(self,
                            run_function: Callable[[], list],
-                           threads: Optional[int] = None) -> int | Int:
+                           has_retval: bool,
+                           args_list: Optional[list] = None,
+                           threads: Optional[int] = None) -> int | None:
         res = 0
         if threads is None:
             tc = multiprocessing.cpu_count()  # threadcount
@@ -591,17 +603,26 @@ class LinkedLattice:
             bounds.append([0, self.num_nodes - 1])
 
         with CF.ThreadPoolExecutor(max_workers=tc) as exe:
-            futures = {exe.submit(
-                run_function,
-                bound): bound for bound in bounds}
-            for future in CF.as_completed(futures):
-                try:
-                    data = future.result()
-                except Exception:
-                    return(0)
-                else:
-                    res += data
-        return(res)
+            if args_list is not None:
+                futures = {exe.submit(
+                    run_function,
+                    bound, args_list): bound for bound in bounds}
+            else:
+                futures = {exe.submit(
+                    run_function,
+                    bound): bound for bound in bounds}
+            if has_retval:
+                for future in CF.as_completed(futures):
+                    try:
+                        data = future.result()
+                    except Exception:
+                        return(0)
+                    else:
+                        res += data
+        if has_retval:
+            return(res)
+        else:
+            return()
 
     def __Sum_Worker__(self, bounds: list | ndarray) -> int | Int:
         """
@@ -637,8 +658,33 @@ class LinkedLattice:
 
             for node in self.range(lower_B, upper_B):
                 for nbr in node.get_connected():
+
                     sum += nbr.spin_state
             return(sum)
+        except Exception:
+            PE.PrintException()
+
+    def __iter__(self):
+        try:
+            if self.origin_node is None:
+                raise ValueError("Iterator : origin node is None!")
+            curr: Node = self.origin_node
+            while curr is not None:
+                yield(curr)
+                curr = curr.get_foward_link()
+            return
+        except Exception:
+            PE.PrintException()
+
+    def __next__(self):
+        try:
+            if self.origin_node is None:
+                raise ValueError("Iterator : origin node is None!")
+            curr: Node = self.origin_node
+            while curr is not None:
+                yield(curr)
+                curr = curr.get_foward_link()
+            return
         except Exception:
             PE.PrintException()
 
@@ -666,9 +712,6 @@ class LinkedLattice:
         except Exception:
             PE.PrintException()
 
-    def __nodedictget__(self, a, b):
-        pass
-
     def __getitem__(self,
                     __NodeIndex: list | NDArray | int | Int) -> Node | None:
         """
@@ -688,9 +731,13 @@ class LinkedLattice:
         """
         try:
             if type(__NodeIndex) == int:
-                coord = [__NodeIndex % self.__shape[0], int(
-                         __NodeIndex / self.__shape[0])]
-                return(self[coord])
+                if __NodeIndex <= self.num_nodes - 1:
+                    coord = [__NodeIndex % self.__shape[0], int(
+                            __NodeIndex / self.__shape[0])]
+                    return(self[coord])
+                else:
+                    raise IndexError(f'Index {__NodeIndex} is out of bounds'
+                                     f' for max index of {self.num_nodes-1:}!')
             else:
                 retval = self.node_dict.get(StripString(
                          __NodeIndex, r_str, is_int=True))
@@ -746,8 +793,9 @@ class LinkedLattice:
                         neighbor.get_combination(ReturnString=True), r_str)
                     self.node_dict[name] = neighbor
                     self.num_nodes += 1
-            elif parent is None and self.origin_node is None:
-                self.origin_node = child
+            elif parent is None:
+                if self.origin_node is None:
+                    self.origin_node = child
                 name = StripString(child.get_combination(), r_str)
                 self.node_dict[name] = child
                 self.num_nodes += 1
@@ -761,7 +809,7 @@ class LinkedLattice:
 
     def get_root(self) -> Node:
         """Returns the origin (A.K.A. root) node."""
-        return self.origin_node
+        return(self.origin_node)
 
     def print_dict(self) -> None:
         """
@@ -822,162 +870,121 @@ class LinkedLattice:
                 return(True)
         return(False)
 
-    def generate(self, dims: list) -> None:
+    def __generation_worker__(self, bounds: list | ndarray) -> None:
+        """
+            Parameters
+            ---------
+            bounds : `list` | `ndarray` -> ArrayLike
+                - Bounds for worker summation.
+
+            Returns
+            -------
+            spin_sum : `int` | `numpy.integer`
+                - This threads final parital sum to return.
+        """
+        # Begin by creating a visit list for keeping track of nodes we still
+        # need to visit and a visited list that will keep track of what has
+        # already been visited.
         try:
-            if self.basis_arr is None:
-                raise ValueError("Error, Basis must first be defined!")
-            cur_cor = np.array([0, 0])
-            cur_ind = np.array([np.int64(0), np.int64(0)])
-            CurNode = None
+            lower_B = bounds[0]
+            upper_B = bounds[1]
             xp1 = False
             yp1 = False
             xm1 = False
             ym1 = False
             xp = np.array([1, 0])
             yp = np.array([0, 1])
-            used = dict()
             neighbors: list[Node] = list()
-            first_run = True
-            check = None
-            inF.print_stdout(" Generating, Please wait...")
-            while cur_ind[0] <= dims[0]-1:
-                while cur_ind[1] <= dims[1]-1:
-                    if first_run:
-                        # create the origin node
-                        CurNode = Node(cur_cor, cur_ind)
-                        self.origin_node = CurNode
-                        first_run = False
-                    elif self[cur_ind] is None:
-                        # create a node indexed by its basis combination
-                        cur_cor = cur_ind.dot(self.basis_arr)
-                        CurNode = Node(cur_cor, cur_ind)
-                    else:
-                        # set the current node to a previously generated Node
-                        CurNode = used.get(StripString(cur_ind, r_str))
+            for node in self.range(lower_B, upper_B):
+                combo = node.get_combination()
+                cur_ind = np.array(combo, np.int64)
 
-                    # Begin checking and creating neighbors
-                    if cur_ind[0]+1 < dims[0]:
-                        xp1 = True
-                        cor = cur_ind+xp
-                        check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
-                            neighbors.append(
-                                Node(cor.dot(self.basis_arr), cor))
-                        elif check is not None:
-                            neighbors.append(check)
-                        else:
-                            raise Exception("IDKWtF")
+                if cur_ind[0]+1 < self.__shape[0]:
+                    xp1 = True
+                    cor = cur_ind+xp
+                    if self.is_neighbor(cur_ind, cor):
+                        neighbors.append(self[cor.dot(self.basis_arr)])
 
-                    if cur_ind[1]+1 < dims[1]:
-                        yp1 = True
-                        cor = cur_ind+yp
-                        check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
-                            neighbors.append(
-                                Node(cor.dot(self.basis_arr), cor))
-                        elif check is not None:
-                            neighbors.append(check)
-                        else:
-                            raise Exception("IDKWtF")
+                if cur_ind[1]+1 < self.__shape[1]:
+                    yp1 = True
+                    cor = cur_ind+yp
+                    if self.is_neighbor(cur_ind, cor):
+                        neighbors.append(self[cor.dot(self.basis_arr)])
 
-                    if cur_ind[0]-1 >= 0:
-                        xm1 = True
-                        cor = cur_ind-xp
-                        check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
-                            neighbors.append(
-                                Node(cor.dot(self.basis_arr), cor))
-                        elif check is not None:
-                            neighbors.append(check)
-                        else:
-                            raise Exception("IDKWtF")
+                if cur_ind[0]-1 >= self.__shape[0]:
+                    xm1 = True
+                    cor = cur_ind-xp
+                    if self.is_neighbor(cur_ind, cor):
+                        neighbors.append(self[cor.dot(self.basis_arr)])
 
-                    if cur_ind[1]-1 >= 0:
-                        ym1 = True
-                        cor = cur_ind-yp
-                        check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
-                            neighbors.append(
-                                Node(cor.dot(self.basis_arr), cor))
-                        elif check is not None:
-                            neighbors.append(check)
-                        else:
-                            raise Exception("IDKWtF")
-                    if (xp1 and yp1) is True:
-                        cor = cur_ind+xp+yp
-                        check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
-                            neighbors.append(
-                                Node(cor.dot(self.basis_arr), cor))
-                        elif check is not None and testcheck:
-                            neighbors.append(used.get(StripString(cor, r_str)))
+                if cur_ind[1]-1 >= self.__shape[1]:
+                    ym1 = True
+                    cor = cur_ind-yp
+                    if self.is_neighbor(cur_ind, cor):
+                        neighbors.append(self[cor.dot(self.basis_arr)])
 
-                    if (xp1 and ym1) is True:
-                        cor = cur_ind+xp-yp
-                        check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
-                            neighbors.append(
-                                Node(cor.dot(self.basis_arr), cor))
-                        elif check is not None and testcheck:
-                            neighbors.append(used.get(StripString(cor, r_str)))
+                if (xp1 and yp1) is True:
+                    cor = cur_ind+xp+yp
+                    if self.is_neighbor(cur_ind, cor):
+                        neighbors.append(self[cor.dot(self.basis_arr)])
 
-                    if (xm1 and yp1) is True:
-                        cor = cur_ind-xp+yp
-                        check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
-                            neighbors.append(
-                                Node(cor.dot(self.basis_arr), cor))
-                        elif check is not None and testcheck:
-                            neighbors.append(used.get(StripString(cor, r_str)))
+                if (xp1 and ym1) is True:
+                    cor = cur_ind+xp-yp
+                    if self.is_neighbor(cur_ind, cor):
+                        neighbors.append(self[cor.dot(self.basis_arr)])
 
-                    if (xm1 and ym1) is True:
-                        cor = cur_ind-xp-yp
-                        check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
-                            neighbors.append(
-                                Node(cor.dot(self.basis_arr), cor))
-                        elif check is not None and testcheck:
-                            neighbors.append(used.get(StripString(cor, r_str)))
+                if (xm1 and yp1) is True:
+                    cor = cur_ind-xp+yp
+                    if self.is_neighbor(cur_ind, cor):
+                        neighbors.append(self[cor.dot(self.basis_arr)])
 
-                    # add neighbors to the Node
-                    self.append(neighbors, CurNode)
-                    for item in neighbors:
-                        temp = item.get_combination(ReturnString=True)
-                        used[temp] = item
+                if (xm1 and ym1) is True:
+                    cor = cur_ind-xp-yp
+                    if self.is_neighbor(cur_ind, cor):
+                        neighbors.append(self[cor.dot(self.basis_arr)])
 
-                    neighbors.clear()
-                    yp1, ym1 = False, False
-
-                    cur_ind = cur_ind + np.array([0, 1])  # increment y
-                    cur_cor = cur_ind.dot(self.basis_arr)
-
+                # add neighbors to the Node
+                node.add_link(neighbors)
+                neighbors.clear()
                 xp1, xm1 = False, False
-                cur_ind[1] = 0
+                yp1, ym1 = False, False
+        except Exception:
+            PE.PrintException()
 
-                cur_ind = cur_ind + np.array([1, 0])  # increment x
-            self.make_linear_linkedlist()
+    def generate(self) -> None:
+        try:
+            if self.basis_arr is None:
+                raise ValueError("Error, Basis must first be defined!")
+            inF.print_stdout(" Generating, Please wait...")
+            # Begin creating the origin node
+            self.append(Node([0, 0], [0, 0]))
+            cur = self.origin_node
+            for i in range(self.__shape[0]):
+                for j in range(self.__shape[1]):
+                    if i == j == 0:
+                        continue
+                    combo = [i, j]
+                    next_node = Node(
+                        np.array(combo).dot(self.basis_arr),
+                        combo)
+                    self.append(next_node)
+                    cur.set_forward_link(next_node)
+                    cur = next_node
+            self.fll_generated = True
             inF.print_stdout(' Generation complete!', end='\n')
         except Exception:
             PE.PrintException()
 
-    def linear_generation(self, dims: list) -> None:
-        for i in range(dims[0]):
-            for j in range(dims[1]):
-                if i == 0 and j == 0:
-                    cur = Node([0, 0], [0, 0])
-                    self.append(cur)
-                    last = cur
-                    continue
-                # construct a bravis lattice
-                cur_cor = i * self.basis_arr[0] + j * self.basis_arr[1]
-                cur = Node(cur_cor, [i, j])
-                self.append(cur, last)
-                last = cur
+    # def linear_generation(self, dims: list) -> None:
+    #     for i in range(lower_B):
+    #         for j in range(dims[1]):
+    #             if i == 0 and j == 0:
+    #                 cur = Node([0, 0], [0, 0])
+    #                 self.append(cur)
+    #                 last = cur
+    #                 continue
+    #             # construct a bravis lattice
+    #             cur_cor = i * self.basis_arr[0] + j * self.basis_arr[1]
+    #             cur = Node(cur_cor, [i, j])
+    #             self.append(cur, last)
+    #             last = cur
