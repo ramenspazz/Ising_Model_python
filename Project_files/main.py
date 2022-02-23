@@ -29,6 +29,10 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
+        # all listed times are on a Ryzen 7 3700x
+        # 32x32     => ~44.75876808 seconds runtime
+        # 64x64     => ~81.04408002 seconds runtime
+        # 128x128   => ~245.7723527 seconds runtime
         N = 128
         M = 128
         size = [N, M]
@@ -127,21 +131,19 @@ def main(*args, **kwargs) -> int:
 
             BJs = np.arange(a, b, step)  # noqa
 
-            # # Uncomment the next 4 lines below if you want, but not
-            # # really a reason to as the metropolis algorithm gets
-            # # called anyways from the get_spin_energy function.
+            # Comment out the next 4 lines below if you want.
+            # The metropolis algorithm gets called anyways
+            # from the get_spin_energy function, but it is 
+            # a mutable function. The results can change
+            # depending on your settings.
+            
             lt_a.metropolis(total_time, BJ, progress=True,
                             save=auto_save, auto_plot=auto_plot)
             lt_b.metropolis(total_time, BJ, progress=True,
                             save=auto_save, auto_plot=auto_plot)
             lt_c.metropolis(total_time, BJ, progress=True,
                             save=auto_save, auto_plot=auto_plot)
-            # # lt_d.metropolis(total_time, BJ, quiet=False)
 
-            # get_spin_energy is 100% complete in 34.30839276s on my home
-            # desktop with n=36, m=42, threads=16 on a Ryzen 7 3700X @
-            # 2.6-4.5Ghz using the seed=1644121893 with gaussian prob settings
-            # of [0.25, 0.4].
             lt_a.get_spin_energy(BJs, total_time, save=auto_save,
                                  auto_plot=auto_plot)
             lt_b.get_spin_energy(BJs, total_time, save=auto_save,
