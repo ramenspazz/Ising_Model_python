@@ -149,4 +149,3 @@ dependencies:
     - pyparsing==3.0.4
     - pyyaml==6.0
     - terminado==0.9.4
-prefix: /home/kirisame_ramen/anaconda3/envs/PY10

@@ -10,17 +10,18 @@ from numbers import Number
 import numpy.typing as npt  # noqa
 from numpy.typing import NDArray
 from numpy import integer as Int, floating as Float, ndarray, number
+import sympy as sym
 # Functions and Libraries
 import tkinter  # noqa : TODO use it later
 import sys
 import numpy as np
+from numpy.linalg import norm
 import PrintException as PE
 import re
 import threading as td  # noqa TODO : use it later
 import multiprocessing
 import concurrent.futures as CF
 import input_funcs as inF
-import matplotlib.pyplot as plt
 
 # ignore warning on line 564
 import warnings
@@ -38,6 +39,7 @@ def StripString(input: NDArray[number] | GNum | str,
                 replace: list[str],
                 is_int: Optional[bool] = None) -> str:
     """
+    TODO FIX for integers
         Purpose
         -------
         This function is used to sanitize input to remove all forms of
@@ -111,8 +113,7 @@ def Dividend_Remainder(n: int | Int,
     """
         Purpose
         -------
-        Returns a list with the dividend and remainder of (nm)/t.
-        Runs in Theta(log(n)), Omega(n), O(nlog(n))
+        returns a list with the dividend and remainder of (nm)/t.
 
         Returns
         -------
@@ -189,64 +190,13 @@ def round_num(input: Float,
             `int`(`0`).
     """
     try:
-        if isinstance(input, ndarray) is True:
-            ret_val = np.zeros(input.shape)
-            for i in range(len(input)):
-                if round_fig is not None:
-                    ret_val[i] = np.round(input[i], round_fig)
-                else:
-                    ret_val[i] = np.round(input[i], figures)
-            return(ret_val)
+        if np.abs(input) < 10**(-figures):
+            return(0)
         else:
-            if np.abs(input) < 10**(-figures):
-                return(0)
+            if round_fig is not None:
+                return(np.round(input, round_fig))
             else:
-                if round_fig is not None:
-                    return(np.round(input, round_fig))
-                else:
-                    return(np.round(input, figures))
-    except Exception:
-        PE.PrintException()
-
-
-def angle_between(v1, v2):
-    """ Returns the angle in radians between vectors 'v1' and 'v2'::
-
-            >>> angle_between((1, 0, 0), (0, 1, 0))
-            1.5707963267948966
-            >>> angle_between((1, 0, 0), (1, 0, 0))
-            0.0
-            >>> angle_between((1, 0, 0), (-1, 0, 0))
-            3.141592653589793
-    """
-    v1_u = np.linalg.norm(v1)
-    v2_u = np.linalg.norm(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
-
-
-def distance_between(A: ndarray, B: ndarray) -> float | int:
-    try:
-        if np.array_equiv(A.shape, B.shape) is False:
-            raise ValueError('Shape of the two inputs must be equal!'
-                             f' Shapes are {A.shape} and {B.shape}.')
-        return(round_num(np.sqrt((A[0]-B[0])**2 + (A[1] - B[1])**2), 10))
-    except Exception:
-        PE.PrintException()
-
-
-def array_isclose(A: ndarray | list,
-                  B: ndarray | list,
-                  round_fig: Optional[float] = 1E-09) -> bool:
-    try:
-        if np.array_equiv(A.shape, B.shape) is False:
-            raise ValueError('Shape of the two inputs must be equal!'
-                             f' Shapes are {A.shape} and {B.shape}.')
-        for A_val, B_val in zip(A, B):
-            if np.abs(A_val - B_val) <= round_fig:
-                continue
-            else:
-                return(False)
-        return(True)
+                return(np.round(input, figures))
     except Exception:
         PE.PrintException()
 
@@ -533,13 +483,11 @@ class LinkedLattice:
                     cur.set_forward_link(next_node)
                     cur = next_node
                 else:
+                    break
                     raise IndexError(
                         f"Index {i} is out of bounds in linked list!")
             self.fll_generated = True
             inF.print_stdout("Sucessfully generated fowardly linked list!")
-        except IndexError:
-            self.fll_generated = True
-            return
         except Exception:
             PE.PrintException()
 
@@ -559,6 +507,79 @@ class LinkedLattice:
                     return
             index += step
         return
+
+    def __calcneighbor__(self) -> dict:
+        """
+            Purpose
+            -------
+            Construct and returns a dictonary of a possible lattice points that
+            are nearest neighbors to an origin point that can be arbitrarily
+            translated.
+        """
+        coords = dict()
+        b1 = self.basis_arr[0]
+        b2 = self.basis_arr[1]
+        __rots = 6 if self.rots == 3 else self.rots
+        if isinstance(self.rots, Float) is True:
+            rot_range = np.linspace(0, np.int64(10 * __rots), 8)
+        else:
+            rot_range = range(__rots)
+        for n in rot_range:
+            c_rot = rotation_mtx(2 * np.pi * n / self.rots)
+            temp1 = b1.dot(c_rot)
+            temp2 = b2.dot(c_rot)
+            for i in range(2):
+                temp1[i] = round_num(temp1[i], 10)
+                temp2[i] = round_num(temp2[i], 10)
+            coords[StripString(str(temp1), r_str)] = temp1
+            coords[StripString(str(temp2), r_str)] = temp2
+        self.y_length = (np.array([1, -1]).dot(self.basis_arr)).dot(
+            np.array([0, 1]))
+        theta = np.pi / __rots
+        p_vec = self.y_length * b1
+        if isinstance(self.rots, Float) is True:
+            rot_range = np.linspace(0,
+                                    np.int64(10 * __rots),
+                                    np.int64(16 * __rots))
+        else:
+            rot_range = range(2 * __rots)
+        for n in rot_range:
+            temp3 = p_vec.dot(rotation_mtx(n*theta))
+            for i in range(2):
+                temp3[i] = round_num(temp3[i], 10)
+            coords[StripString(str(temp3), r_str)] = temp3
+        return(coords)
+
+    def is_neighbor(self, origin, possible_neighbor) -> bool:
+        """
+            Purpose
+            -------
+            Checks the generated dictionary from __calcneighbor__ and returns
+            `True` or `False`.
+        """
+        if np.array_equiv(possible_neighbor, origin):
+            return(False)
+
+        for item in self.neighbors_ref.values():
+            # this line generates a runtime warning, but it is safe to ignore
+            temp = np.arccos((possible_neighbor-origin).dot(origin) /
+                             (norm(origin) * norm(possible_neighbor-origin)))
+            temp = round_num(temp, 7, round_fig=10)
+
+            if temp == 0 or (1-temp/np.pi) < 1E-07:
+                return(False)
+            if ((self.y_length == norm(possible_neighbor - origin) is not True)
+                    or (1 == norm(possible_neighbor - origin) is not True)):
+                a = origin.dot(self.basis_arr)+item
+                b = possible_neighbor.dot(self.basis_arr)
+                for i in range(len(a)):
+                    a[i] = round_num(a[i], 10)
+                    b[i] = round_num(b[i], 10)
+                if np.array_equiv(a, b) is True:
+                    return(True)
+            else:
+                continue
+        return(False)
 
     def __threadlauncher__(self,
                            run_function: Callable[[], list],
@@ -724,6 +745,9 @@ class LinkedLattice:
                 Node that child gets linked to.
         """
         try:
+            # TODO : check the immediate surrounds of the basis combination
+            # to see if another node exists that is not linked to the node
+            # to be appeneded.
             # This works by taking the new nodes basis combination and first
             # computes the angle between the two vectors and finds how many
             # neighbors a given node can have maximum.
@@ -786,56 +810,6 @@ class LinkedLattice:
         for basis_vector in input_basis:
             self.basis_arr.append(basis_vector)
 
-    def __calcneighbor__(self) -> dict:
-        """
-            Purpose
-            -------
-            Construct and returns a dictonary of a possible lattice points that
-            are nearest neighbors to an origin point that can be arbitrarily
-            translated.
-        """
-        coords = dict()
-        b1 = self.basis_arr[0]
-        # b2 = self.basis_arr[1]  # TODO: maybe include this too?
-        __rots = int(6) if self.rots == 3 else self.rots
-        # __rots = self.rots
-        print(f"self.rots = {self.rots}, __rots= = {__rots}\n")
-
-        if isinstance(self.rots, Float) is True:
-            rot_range = np.linspace(0, np.int64(10 * __rots), 8)
-        else:
-            rot_range = range(__rots)
-
-        x_ = []
-        y_ = []
-        for n in rot_range:
-            c_rot = rotation_mtx(2 * np.pi * n / __rots)
-            temp1 = round_num(b1.dot(c_rot), 10)
-            coords[StripString(str(temp1), r_str)] = temp1
-
-        for coord in coords.values():
-            x_.append(coord[0])
-            y_.append(coord[1])
-        plt.scatter(x_, y_)
-        plt.show()
-        return(coords)
-
-    def is_neighbor(self, origin, possible_neighbor) -> bool:
-        """
-            Purpose
-            -------
-            Checks the generated dictionary from __calcneighbor__ and returns
-            `True` or `False`.
-        """
-        if np.array_equiv(possible_neighbor, origin):
-            return(False)
-        test = (possible_neighbor - origin).dot(self.basis_arr)
-        test = round_num(test, 10)
-        for item in self.neighbors_ref.values():
-            if array_isclose(test, item) is True:
-                return(True)
-        return(False)
-
     def generate(self, dims: list) -> None:
         try:
             if self.basis_arr is None:
@@ -874,8 +848,7 @@ class LinkedLattice:
                         xp1 = True
                         cor = cur_ind+xp
                         check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
+                        if check is None:
                             neighbors.append(
                                 Node(cor.dot(self.basis_arr), cor))
                         elif check is not None:
@@ -887,8 +860,7 @@ class LinkedLattice:
                         yp1 = True
                         cor = cur_ind+yp
                         check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
+                        if check is None:
                             neighbors.append(
                                 Node(cor.dot(self.basis_arr), cor))
                         elif check is not None:
@@ -900,8 +872,7 @@ class LinkedLattice:
                         xm1 = True
                         cor = cur_ind-xp
                         check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
+                        if check is None:
                             neighbors.append(
                                 Node(cor.dot(self.basis_arr), cor))
                         elif check is not None:
@@ -913,8 +884,7 @@ class LinkedLattice:
                         ym1 = True
                         cor = cur_ind-yp
                         check = self[cor]
-                        testcheck = self.is_neighbor(cur_ind, cor)
-                        if check is None and testcheck:
+                        if check is None:
                             neighbors.append(
                                 Node(cor.dot(self.basis_arr), cor))
                         elif check is not None:
