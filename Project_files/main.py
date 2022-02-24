@@ -35,8 +35,8 @@ def main(*args, **kwargs) -> int:
         # 32x32     => ~44.75876808 seconds runtime
         # 64x64     => ~81.04408002 seconds runtime
         # 128x128   => ~245.7723527 seconds runtime
-        N = 20
-        M = 20
+        N = 128
+        M = 128
         size = [N, M]
         total_time = 1000
         a = 0.1
@@ -108,15 +108,15 @@ def main(*args, **kwargs) -> int:
                 lt_b.display()
                 lt_c.display()
 
-            print('lt_a connected')
-            for item in lt_b[1, 1].get_connected():
-                print(item)
-            print('lt_b connected')
-            for item in lt_b[1, 1].get_connected():
-                print(item)
-            print('lt_c connected')
-            for item in lt_c[1, 1].get_connected():
-                print(item)
+            # print('lt_a connected')
+            # for item in lt_a[1, 1].get_connected():
+            #     print(item)
+            # print('lt_b connected')
+            # for item in lt_b[1, 1].get_connected():
+            #     print(item)
+            # print('lt_c connected')
+            # for item in lt_c[1, 1].get_connected():
+            #     print(item)
 
             inF.print_stdout(
                 f"BJ range= [{a},{b}]. Steps= {step}. Change (y/n)? ")
@@ -137,13 +137,12 @@ def main(*args, **kwargs) -> int:
             # # Uncomment the next 4 lines below if you want, but not
             # # really a reason to as the metropolis algorithm gets
             # # called anyways from the get_spin_energy function.
-            lt_a.metropolis(total_time, BJ, progress=True,
-                            save=auto_save, auto_plot=auto_plot)
-            lt_b.metropolis(total_time, BJ, progress=True,
-                            save=auto_save, auto_plot=auto_plot)
-            lt_c.metropolis(total_time, BJ, progress=True,
-                            save=auto_save, auto_plot=auto_plot)
-            # # lt_d.metropolis(total_time, BJ, quiet=False)
+            # lt_a.metropolis(total_time, BJ, progress=True,
+            #                 save=auto_save, auto_plot=auto_plot)
+            # lt_b.metropolis(total_time, BJ, progress=True,
+            #                 save=auto_save, auto_plot=auto_plot)
+            # lt_c.metropolis(total_time, BJ, progress=True,
+            #                 save=auto_save, auto_plot=auto_plot)
 
             # get_spin_energy is 100% complete in 34.30839276s on my home
             # desktop with n=36, m=42, threads=16 on a Ryzen 7 3700X @

@@ -10,7 +10,7 @@ from numbers import Number
 # import matplotlib.pyplot as plt
 import numpy.typing as npt  # noqa
 from numpy.typing import NDArray
-from numpy import int64, int8, integer as Int, floating as Float, ndarray, number
+from numpy import int64, int8, integer as Int, floating as Float, ndarray, number  # noqa E501
 # Functions and Libraries
 import tkinter  # noqa : TODO use it later
 import sys
@@ -175,7 +175,7 @@ def distance_between(A: ndarray, B: ndarray) -> float | int:
         if np.array_equiv(A.shape, B.shape) is False:
             raise ValueError('Shape of the two inputs must be equal!'
                              f' Shapes are {A.shape} and {B.shape}.')
-        return(round_num(np.sqrt((A[0]-B[0])**2 + (A[1] - B[1])**2), 5))
+        return(round_num(np.sqrt((A[0]-B[0])**2 + (A[1] - B[1])**2), 10))
     except Exception:
         PE.PrintException()
 
@@ -687,11 +687,9 @@ class LinkedLattice:
                 for i in range(__NodeIndex):
                     cur = self.origin_node.get_foward_link()
                 return(cur)
-
             else:
-                lookup = np.array(__NodeIndex) if type(__NodeIndex) == tuple else __NodeIndex  # noqa E501 lazy
-                retval = self.node_dict.get(ArrayHash(lookup))
-                return(retval)
+                lookup = np.array(__NodeIndex) if (type(__NodeIndex) == tuple or type(__NodeIndex) == list) else __NodeIndex  # noqa E501 lazy
+                return(self.node_dict.get(ArrayHash(lookup)))
         except Exception:
             PE.PrintException()
 
@@ -796,7 +794,7 @@ class LinkedLattice:
         self.nbrs_list.append([-1*b1, np.array([-1, 0], int8)])
         self.nbrs_list.append([b2, np.array([0, 1], int8)])
         self.nbrs_list.append([-1*b2, np.array([0, -1], int8)])
-        if self.rots != 4:
+        if self.rots == 3 or self.rots == 6:
             self.nbrs_list.append([b1 - b2, np.array([1, -1], int8)])
             self.nbrs_list.append([b2 - b1, np.array([-1, 1], int8)])
 
@@ -809,21 +807,19 @@ class LinkedLattice:
         """
         try:
             for nbr in self.nbrs_list:
-                coord = round_num(node.get_coords() + nbr[0], 5)
+                coord = round_num(node.get_coords() + nbr[0], 10)
                 index = node.get_index() + nbr[1]
                 x_in_bounds = ((index[0] >= 0) and
                                (index[0] < self.__shape[0]))
                 y_in_bounds = ((index[1] >= 0) and
                                (index[1] < self.__shape[1]))
                 if (x_in_bounds and y_in_bounds) is True:
-                    cord_hash = ArrayHash(coord)
-                    possible_nb = self.cord_dict.get(cord_hash)
+                    possible_nb = self[index]
                     if possible_nb is not None:
                         node.add_link(possible_nb)
                     else:
                         new_node = Node(coord, index)
-                        self.append(new_node)
-                        node.add_link(new_node)
+                        self.append(new_node, node)
         except Exception:
             PE.PrintException()
 
@@ -846,28 +842,28 @@ class LinkedLattice:
                 index = np.array([
                         i % self.__shape[0],
                         int(i / self.__shape[0])])
-                coord = round_num(index.dot(self.basis_arr), 5)
+                coord = round_num(index.dot(self.basis_arr), 10)
                 node = self[index]
                 if node is None:
                     node = Node(coord, index)
                     self.append(node)
                 # generate the neighbors for the node
                 for nbr in self.nbrs_list:
-                    nbr_coord = round_num(coord + nbr[0], 5)
-                    index = index + nbr[1]
+                    coord = round_num(node.get_coords() + nbr[0], 10)
+                    index = node.get_index() + nbr[1]
                     x_in_bounds = ((index[0] >= 0) and
                                    (index[0] < self.__shape[0]))
                     y_in_bounds = ((index[1] >= 0) and
                                    (index[1] < self.__shape[1]))
-                    if (x_in_bounds and y_in_bounds) is True:
-                        cord_hash = ArrayHash(nbr_coord)
-                        possible_nb = self.cord_dict.get(cord_hash)
+                    # print(index, x_in_bounds and y_in_bounds)
+                    if x_in_bounds and y_in_bounds:
+                        # print('sajdflkasdlkjfa;lksdjf;')
+                        possible_nb = self[index]
                         if possible_nb is not None:
                             node.add_link(possible_nb)
                         else:
-                            new_node = Node(nbr_coord, index)
-                            self.append(new_node)
-                            node.add_link(new_node)
+                            new_node = Node(coord, index)
+                            self.append(new_node, node)
         except Exception:
             PE.PrintException()
 
