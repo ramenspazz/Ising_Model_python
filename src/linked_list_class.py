@@ -867,29 +867,3 @@ class LinkedLattice:
         except Exception:
             PE.PrintException()
 
-    # def generate(self) -> None:
-    #     try:
-    #         if self.basis_arr is None:
-    #             raise ValueError("Error, Basis must first be defined!")
-    #         inF.print_stdout(" Generating, Please wait...")
-    #         # Begin creating the origin node
-    #         self.append(Node([0, 0], [0, 0]))
-    #         cur = self.origin_node
-    #         for i in range(self.__shape[0]):
-    #             for j in range(self.__shape[1]):
-    #                 if i == j == 0:
-    #                     continue
-    #                 combo = [i, j]
-    #                 next_node = Node(
-    #                     np.array(combo).dot(self.basis_arr),
-    #                     combo)
-    #                 self.append(next_node)
-    #                 cur.set_forward_link(next_node)
-    #                 cur = next_node
-    #         self.fll_generated = True
-    #         for value in self.node_dict.values():
-    #             self.cord_dict[ArrayHash(value.get_coords())] = value
-    #         self.__threadlauncher__(self.__generation_worker__, False, threads=1)
-    #         inF.print_stdout(' Generation complete!', end='\n')
-    #     except Exception:
-    #         PE.PrintException()
