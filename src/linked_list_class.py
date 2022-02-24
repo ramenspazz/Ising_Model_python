@@ -10,7 +10,7 @@ from numbers import Number
 # import matplotlib.pyplot as plt
 import numpy.typing as npt  # noqa
 from numpy.typing import NDArray
-from numpy import integer as Int, floating as Float, ndarray, number
+from numpy import int64, int8, integer as Int, floating as Float, ndarray, number
 # Functions and Libraries
 import tkinter  # noqa : TODO use it later
 import sys
@@ -140,6 +140,8 @@ def round_num(input: Float,
                     ret_val[i] = np.round(input[i], round_fig)
                 else:
                     ret_val[i] = np.round(input[i], figures)
+                    if ret_val[i] is -0.0:  # intentional check for -0.0
+                        ret_val[i] = 0
             return(ret_val)
         else:
             if np.abs(input) < 10**(-figures):
@@ -173,7 +175,7 @@ def distance_between(A: ndarray, B: ndarray) -> float | int:
         if np.array_equiv(A.shape, B.shape) is False:
             raise ValueError('Shape of the two inputs must be equal!'
                              f' Shapes are {A.shape} and {B.shape}.')
-        return(round_num(np.sqrt((A[0]-B[0])**2 + (A[1] - B[1])**2), 10))
+        return(round_num(np.sqrt((A[0]-B[0])**2 + (A[1] - B[1])**2), 5))
     except Exception:
         PE.PrintException()
 
@@ -231,7 +233,7 @@ class Node:
                         Got ({spin_state}, type={type(spin_state)})
                         """)
             if combination is not None:
-                self.combination: NDArray[Int] = np.array(combination)
+                self.combination: NDArray[Int] = np.array(combination, int64)
             elif combination is None:
                 self.combination: NDArray[Int] = None
             self.coords: NDArray[Float] = np.array(coords)
@@ -316,7 +318,7 @@ class Node:
     def get_coords_and_spin(self) -> ndarray:
         return(np.array([*self.coords, self.spin_state]))
 
-    def get_combination(self) -> NDArray | str:
+    def get_index(self) -> NDArray | str:
         """
             Parameters
             ----------
@@ -396,7 +398,7 @@ class CoordinateDict(TypedDict):
 
 
 class NDArrayDict(TypedDict):
-    name: bytes
+    name: int
     value: ndarray
 
 
@@ -452,14 +454,15 @@ class LinkedLattice:
                 [[1, 0], [0, 1]])
             self.rots: int = 4
         self.b1_plus_b2_len: float = None
-        self.index_dict: NDArrayDict = self.__calcneighbor__()
+        self.nbrs_list: list[list[ndarray]] = list()
+        self.__calcneighbor__()
         self.node_dict: CoordinateDict = {}
         self.cord_dict: CoordinateDict = {}
         self.num_nodes: int = int(0)
         self.num_voids: int = int(0)
         self.origin_node: Node = None
         self.__shape = __shape
-        self.generate()
+        self.__threadlauncher__(self.__generation_worker__, False, threads=1)
         self.visited = list()
         self._sum: int | Int = int(0)
         self.fll_generated = False
@@ -521,7 +524,7 @@ class LinkedLattice:
         if tc != 1:
             Div, Rem = Dividend_Remainder(x, y, tc)
         if tc == 1:
-            bounds.append([0, self.num_nodes - 1])
+            bounds.append([0, x*y-1])
         elif not ((Div == 0) or (Div == 1)):
             if Rem == 0:
                 # tc evenly divides the area so split the alttice into
@@ -538,13 +541,13 @@ class LinkedLattice:
                     upper = (i+1)*Div - 1
                     bounds.append([lower, upper])
                 # append the extra
-                bounds.append([(tc+1)*Div - 1, self.num_nodes - 1])
+                bounds.append([(tc+1)*Div - 1, x*y-1 - 1])
         elif Div == 0:
             tc = 1
-            bounds.append([0, self.num_nodes - 1])
+            bounds.append([0, x*y-1 - 1])
         elif Div == 1 and Rem != 0:
             bounds.append([0, tc - 1])
-            bounds.append([tc, self.num_nodes - 1])
+            bounds.append([tc, x*y-1 - 1])
             tc = 2
         with CF.ThreadPoolExecutor(max_workers=tc) as exe:
             if args_list is not None:
@@ -725,12 +728,12 @@ class LinkedLattice:
                 Can not append, Child and Parrent are the same!
                 """)
             elif isinstance(child, list) and parent is not None:
-                name = ArrayHash(parent.get_combination())
+                name = ArrayHash(parent.get_index())
                 self.node_dict[name] = parent
                 self.num_nodes += 1
                 for neighbor in child:
                     parent.add_link(neighbor)
-                    name = ArrayHash(neighbor.get_combination())
+                    name = ArrayHash(neighbor.get_index())
                     self.node_dict[name] = neighbor
                     self.num_nodes += 1
             elif isinstance(child, list) is True:
@@ -742,12 +745,12 @@ class LinkedLattice:
             elif parent is None:
                 if self.origin_node is None:
                     self.origin_node = child
-                name = ArrayHash(child.get_combination())
+                name = ArrayHash(child.get_index())
                 self.node_dict[name] = child
                 self.num_nodes += 1
             elif parent is not None:
                 parent.add_link(child)
-                name = ArrayHash(child.get_combination())
+                name = ArrayHash(child.get_index())
                 self.node_dict[name] = child
                 self.num_nodes += 1
         except Exception:
@@ -778,7 +781,7 @@ class LinkedLattice:
         for basis_vector in input_basis:
             self.basis_arr.append(basis_vector)
 
-    def __calcneighbor__(self) -> dict:
+    def __calcneighbor__(self) -> None:
         """
             Purpose
             -------
@@ -786,41 +789,43 @@ class LinkedLattice:
             are nearest neighbors to an origin point that can be arbitrarily
             translated.
         """
-        coords = dict()
-        b1 = round_num(self.basis_arr[0], 10)
-        b2 = round_num(self.basis_arr[1], 10)  # TODO: maybe include this too?
+        b1 = self.basis_arr[0]
+        b2 = self.basis_arr[1]  # TODO: maybe include this too?
 
-        coords[ArrayHash(b1)] = b1
-        coords[ArrayHash(-1*b1)] = -1*b1
-        coords[ArrayHash(b2)] = b2
-        coords[ArrayHash(-1*b2)] = -1*b2
+        self.nbrs_list.append([b1, np.array([1, 0], int8)])
+        self.nbrs_list.append([-1*b1, np.array([-1, 0], int8)])
+        self.nbrs_list.append([b2, np.array([0, 1], int8)])
+        self.nbrs_list.append([-1*b2, np.array([0, -1], int8)])
         if self.rots != 4:
-            coords[ArrayHash(b1 - b2)] = b1 - b2
-            coords[ArrayHash(b2 - b1)] = b2 - b1
-        # x_ = []
-        # y_ = []
-        # for value in coords.values():
-        #     x_.append(value[0])
-        #     y_.append(value[1])
-        # plt.scatter(x_, y_)
-        # plt.show()
-        return(coords)
+            self.nbrs_list.append([b1 - b2, np.array([1, -1], int8)])
+            self.nbrs_list.append([b2 - b1, np.array([-1, 1], int8)])
 
-    def NodesNeighbors(self, origin: Node) -> list[Node] | None:
+    def NodesNeighbors(self, node: Node) -> None:
         """
             Purpose
             -------
             Checks the generated dictionary from __calcneighbor__ and returns
             `True` or `False`.
         """
-        retval = []
-        for value in self.index_dict.values():
-            cord_hash = ArrayHash(
-                        round_num(origin.get_coords() + value, 10))
-            possible_nb = self.cord_dict.get(cord_hash)
-            if possible_nb is not None:
-                retval.append(possible_nb)
-        return(retval)
+        try:
+            for nbr in self.nbrs_list:
+                coord = round_num(node.get_coords() + nbr[0], 5)
+                index = node.get_index() + nbr[1]
+                x_in_bounds = ((index[0] >= 0) and
+                               (index[0] < self.__shape[0]))
+                y_in_bounds = ((index[1] >= 0) and
+                               (index[1] < self.__shape[1]))
+                if (x_in_bounds and y_in_bounds) is True:
+                    cord_hash = ArrayHash(coord)
+                    possible_nb = self.cord_dict.get(cord_hash)
+                    if possible_nb is not None:
+                        node.add_link(possible_nb)
+                    else:
+                        new_node = Node(coord, index)
+                        self.append(new_node)
+                        node.add_link(new_node)
+        except Exception:
+            PE.PrintException()
 
     def __generation_worker__(self, bounds: list | ndarray) -> None:
         """
@@ -834,50 +839,61 @@ class LinkedLattice:
             spin_sum : `int` | `numpy.integer`
                 - This threads final parital sum to return.
         """
-        # Begin by creating a visit list for keeping track of nodes we still
-        # need to visit and a visited list that will keep track of what has
-        # already been visited.
         try:
             lower_B = bounds[0]
-            upper_B = bounds[1]
+            upper_B = bounds[1] + 1
             for i in range(lower_B, upper_B):
-                cur_ind = np.array([
+                index = np.array([
                         i % self.__shape[0],
                         int(i / self.__shape[0])])
-                node = self[cur_ind]
-                print(node)
+                coord = round_num(index.dot(self.basis_arr), 5)
+                node = self[index]
                 if node is None:
-                    continue
-                nbrs = self.NodesNeighbors(node)
-                print(nbrs)
-                if len(nbrs) > 0:
-                    node.add_link(nbrs)
+                    node = Node(coord, index)
+                    self.append(node)
+                # generate the neighbors for the node
+                for nbr in self.nbrs_list:
+                    nbr_coord = round_num(coord + nbr[0], 5)
+                    index = index + nbr[1]
+                    x_in_bounds = ((index[0] >= 0) and
+                                   (index[0] < self.__shape[0]))
+                    y_in_bounds = ((index[1] >= 0) and
+                                   (index[1] < self.__shape[1]))
+                    if (x_in_bounds and y_in_bounds) is True:
+                        cord_hash = ArrayHash(nbr_coord)
+                        possible_nb = self.cord_dict.get(cord_hash)
+                        if possible_nb is not None:
+                            node.add_link(possible_nb)
+                        else:
+                            new_node = Node(nbr_coord, index)
+                            self.append(new_node)
+                            node.add_link(new_node)
         except Exception:
             PE.PrintException()
 
-    def generate(self) -> None:
-        try:
-            if self.basis_arr is None:
-                raise ValueError("Error, Basis must first be defined!")
-            inF.print_stdout(" Generating, Please wait...")
-            # Begin creating the origin node
-            self.append(Node([0, 0], [0, 0]))
-            cur = self.origin_node
-            for i in range(self.__shape[0]):
-                for j in range(self.__shape[1]):
-                    if i == j == 0:
-                        continue
-                    combo = [i, j]
-                    next_node = Node(
-                        np.array(combo).dot(self.basis_arr),
-                        combo)
-                    self.append(next_node)
-                    cur.set_forward_link(next_node)
-                    cur = next_node
-            self.fll_generated = True
-            for value in self.node_dict.values():
-                self.cord_dict[ArrayHash(value.get_coords())] = value
-            self.__threadlauncher__(self.__generation_worker__, False, threads=1)
-            inF.print_stdout(' Generation complete!', end='\n')
-        except Exception:
-            PE.PrintException()
+    # def generate(self) -> None:
+    #     try:
+    #         if self.basis_arr is None:
+    #             raise ValueError("Error, Basis must first be defined!")
+    #         inF.print_stdout(" Generating, Please wait...")
+    #         # Begin creating the origin node
+    #         self.append(Node([0, 0], [0, 0]))
+    #         cur = self.origin_node
+    #         for i in range(self.__shape[0]):
+    #             for j in range(self.__shape[1]):
+    #                 if i == j == 0:
+    #                     continue
+    #                 combo = [i, j]
+    #                 next_node = Node(
+    #                     np.array(combo).dot(self.basis_arr),
+    #                     combo)
+    #                 self.append(next_node)
+    #                 cur.set_forward_link(next_node)
+    #                 cur = next_node
+    #         self.fll_generated = True
+    #         for value in self.node_dict.values():
+    #             self.cord_dict[ArrayHash(value.get_coords())] = value
+    #         self.__threadlauncher__(self.__generation_worker__, False, threads=1)
+    #         inF.print_stdout(' Generation complete!', end='\n')
+    #     except Exception:
+    #         PE.PrintException()
