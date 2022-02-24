@@ -18,6 +18,8 @@ import input_funcs as inF  # noqa E402
 from getpass import getpass  # noqa E402
 from random import random  # noqa E402
 import Data_Analysis as DA  # noqa E402
+import warnings  # noqa E402
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 sys.setrecursionlimit(1000000)  # increase recursion limit
 
 
@@ -46,6 +48,7 @@ def main(*args, **kwargs) -> int:
 
         lt_a = lt(1, size)
         lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
+        # print(lt_b.internal_arr.cord_dict)
         lt_c = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
 
         inF.print_stdout(
@@ -106,13 +109,13 @@ def main(*args, **kwargs) -> int:
                 lt_c.display()
 
             # print('lt_a connected')
-            # for item in lt_a[4, 1].get_connected():
+            # for item in lt_a[1, 1].get_connected():
             #     print(item)
             # print('lt_b connected')
-            # for item in lt_b[4, 1].get_connected():
+            # for item in lt_b[1, 1].get_connected():
             #     print(item)
             # print('lt_c connected')
-            # for item in lt_c[4, 1].get_connected():
+            # for item in lt_c[1, 1].get_connected():
             #     print(item)
 
             inF.print_stdout(
@@ -131,19 +134,20 @@ def main(*args, **kwargs) -> int:
 
             BJs = np.arange(a, b, step)  # noqa
 
-            # Comment out the next 4 lines below if you want.
-            # The metropolis algorithm gets called anyways
-            # from the get_spin_energy function, but it is 
-            # a mutable function. The results can change
-            # depending on your settings.
-            
-            lt_a.metropolis(total_time, BJ, progress=True,
-                            save=auto_save, auto_plot=auto_plot)
-            lt_b.metropolis(total_time, BJ, progress=True,
-                            save=auto_save, auto_plot=auto_plot)
-            lt_c.metropolis(total_time, BJ, progress=True,
-                            save=auto_save, auto_plot=auto_plot)
+            # # Uncomment the next 4 lines below if you want, but not
+            # # really a reason to as the metropolis algorithm gets
+            # # called anyways from the get_spin_energy function.
+            # lt_a.metropolis(total_time, BJ, progress=True,
+            #                 save=auto_save, auto_plot=auto_plot)
+            # lt_b.metropolis(total_time, BJ, progress=True,
+            #                 save=auto_save, auto_plot=auto_plot)
+            # lt_c.metropolis(total_time, BJ, progress=True,
+            #                 save=auto_save, auto_plot=auto_plot)
 
+            # get_spin_energy is 100% complete in 34.30839276s on my home
+            # desktop with n=36, m=42, threads=16 on a Ryzen 7 3700X @
+            # 2.6-4.5Ghz using the seed=1644121893 with gaussian prob settings
+            # of [0.25, 0.4].
             lt_a.get_spin_energy(BJs, total_time, save=auto_save,
                                  auto_plot=auto_plot)
             lt_b.get_spin_energy(BJs, total_time, save=auto_save,

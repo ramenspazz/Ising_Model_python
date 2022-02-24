@@ -101,7 +101,7 @@ class lattice_class:
         """
         try:
             if args is None:
-                sys.stderr.write("IS NONE")
+                sys.stderr.write("Args are None")
             if np.abs(self.Lshape[0]) > 0 and np.abs(self.Lshape[1]) > 0:
                 return(self.internal_arr.__getitem__(*args))
             else:
@@ -112,7 +112,8 @@ class lattice_class:
             PE.PrintException()
 
     def __iter__(self) -> lc.Node | None:
-        pass
+        for node in self.internal_arr:
+            yield node
 
     def __setitem__(self, index: list[int] | NDArray[Int], val: int | Int):
         """
