@@ -1,5 +1,3 @@
-Important notes at the bottom of the README
-
 # Project Brief
 This is a program written in pure python that simulates the Ising model of atomic spins. The Ising model of spins is a simple, but powerful model that displays the basics of phase transitions with temperature. My model also supports the natural crystal symmetries of C3V, C4V, C5V and C6V with voids in the lattice.
 
@@ -28,14 +26,14 @@ It is easiest to use VS code to set the computation kernel to the miniconda pyth
 - Type ```select notenook kernel``` and select the name of the python3.10 venv (PY10 if you used my yml file to generate your env).
 - Run the notebook
 
-# Instructions if you're using Windows and are not UNIX shy
+# Instructions if you're using Windows and want to use WSL
 ## Install WSL2.0:
 - Open powershell elevated as admin and run the command ```wsl --install```, then restart when prompted to.
 - Upon reboot and logging back into Windows, a command prompt will pop up eventually. Wait for the install to finish.
 - Then in this prompt window, setup your username and password.
 
 ## Setup and install miniconda:
-- Download in Windows: https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+- Download in Windows the miniconda Linux version that fits your system from: https://docs.conda.io/en/latest/miniconda.html
 - Then we transfer to this file to WSL by first opening a Windows explorer instance at the WSL installation directory by running the command (in the WSL window) ```explorer.exe .```.
 - Next, drag and drop the previously downloaded file to the directory of your choice (I recomend somewhere in your home folder located at ```/home/<your user name>```.
 - Next locate the directory you placed the file in and set the current directory (```cd <directory>```) to the location of the file ```Miniconda3-latest-Linux-x86_64.sh```.
@@ -45,20 +43,15 @@ It is easiest to use VS code to set the computation kernel to the miniconda pyth
 
 Follow the Unix instructions from §([Setting up the enviroment](https://github.com/ramenspazz/Ising_Model_python#setting-up-the-enviroment)), but make sure you are in your home folder before starting by running the command : ```cd /home/<your user name here>```. WSL for some reason doesnt set the default directory to your home folder in some test cases I have looked into.
 
-# Instructions if you're using Windows and are UNIX shy
-> Note: On my Windows test setup, Microsoft is deleting python as downloaded from anaconda and miniconda (not WSL) right now in order to push their own version of python 3.10 on the windows store. This is BS and why I recomend using WSL instead.
-> Note: You can pip install the python3.10 dependencies but this is bad practice.
+# Instructions if you want to use native Windows
+- Download the Windows Miniconda version that fits your system (32 or 64 bit): https://docs.conda.io/en/latest/miniconda.html
+- Install Miniconda by following the prompts and making sure add to system path is checked
+- Open the anaconda prompt and 
 
 Download and install miniconda:
 - Navigate to https://docs.conda.io/en/latest/miniconda.html and select the correct version for your system.
 - From the installed anaconda powershell, run the command ```conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy```.
 - Activate the newly created python enviroment with ```conda activate <name here>```.
-- Run the file main.py like so: ```<your path to the conda env> -O <the path to>\main.py```
+- Run the file main.py like so: ```<your path to the conda env> -O <the path to>\main.py``` OR register the path ```<your path to the conda env>``` with your runtime of choice (vs code, jupyter notebook, pycharm, etc...) 
 - Finally set your launcher with your program of choice to be the anaconda powershell launcher and you are done!
-
-# Important Notes
-- I recommend using the script file ```main.py``` instead of the jupyter notebook. Jupyter notebooks just needlessly complicate things. It YMMV when it comes to using Visual Studio Code jupyter enviroments (works fine for me), versus the jupyter provided enviroment (doesn't work fine for me).
-- In my test VM of Windows on my computer and on my USB bootable Windows installation for testing, the multithreading library in python correctly launches the required number of threads, but in Microsoft Windows some threads are locked by the global interpreter lock (GIL) and thus do no work. This causes 16 threads to launch, but only 6 of them to do work and can cause race conditions and hanging. This issue does not exist in OSX or UNIX. If you can get it running in native Windows then awesome, please let me know, but it is not my experience with my testing VM and USB bootable that this works properly. My friend could get it working on his laptop, but I am unsure if the other threads were doing work or not, I was not able to test that, only verify that the program ran and the expected output was generated for the program test case. WSL displays these bugs as well but still runs fine, and it is infuriating :<
-
-You have been warned.
 
