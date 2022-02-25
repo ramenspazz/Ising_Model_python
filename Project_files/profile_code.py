@@ -20,6 +20,7 @@ from random import random  # noqa E402
 import Data_Analysis as DA  # noqa E402
 import warnings  # noqa E402
 import cProfile  # noqa E402
+import pstats  # noqa E402
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 sys.setrecursionlimit(1000000)  # increase recursion limit
 
@@ -36,10 +37,10 @@ def main(*args, **kwargs) -> int:
         # 32x32     => ~44.75876808 seconds runtime
         # 64x64     => ~81.04408002 seconds runtime
         # 128x128   => ~245.7723527 seconds runtime
-        N = 128
-        M = 128
+        N = 32
+        M = 32
         size = [N, M]
-        total_time = 1000
+        total_time = 200
         a = 0.1
         b = 2
         step = 0.05
@@ -54,11 +55,11 @@ def main(*args, **kwargs) -> int:
 
         seed = 1644121893
         lt_a.randomize(voids=True, probs=[45, 45, 10],
-                       rand_seed=seed, quiet=False)
+                       rand_seed=seed)
         lt_b.randomize(voids=True, probs=[55, 40, 5],
-                       rand_seed=seed, quiet=False)
+                       rand_seed=seed)
         lt_c.randomize(voids=True, probs=[30, 65, 5],
-                       rand_seed=seed, quiet=False)
+                       rand_seed=seed)
 
         lt_a.get_spin_energy(BJs, total_time, save=auto_save,
                              auto_plot=auto_plot)
@@ -75,4 +76,9 @@ def main(*args, **kwargs) -> int:
 
 
 if __name__ == '__main__':
-    cProfile.run(main())
+    with cProfile.Profile() as pr:
+        main()
+    stats = pstats.Stats(pr)
+    stats.sort_stats(pstats.SortKey.TIME)
+    # stats.print_stats()
+    stats.dump_stats(filename='profile.prof')

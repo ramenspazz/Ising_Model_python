@@ -4,6 +4,7 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
+import math
 # Typing imports
 from typing import Optional, TypedDict, Union, Callable
 from numbers import Number
@@ -12,6 +13,7 @@ import numpy.typing as npt  # noqa
 from numpy.typing import NDArray
 from numpy import int64, int8, integer as Int, floating as Float, ndarray, number  # noqa E501
 # Functions and Libraries
+from numba import njit
 import tkinter  # noqa : TODO use it later
 import numpy as np
 import PrintException as PE
@@ -29,6 +31,7 @@ MIN_INT = pow(-2, 31)
 MAX_INT = pow(2, 31) - 1
 
 
+@njit(nopython=True)
 def get_index(i: int, x_range: int) -> ndarray:
     """
         Returns
@@ -37,12 +40,9 @@ def get_index(i: int, x_range: int) -> ndarray:
             - A 1D numpy ndarray with 2 entries listing a (x,y) pair given an
             input integer `i` that maps to the 2D plane.
     """
-    try:
-        return(np.array(
-            [i % x_range,
-             int(i / x_range)]))
-    except Exception:
-        PE.PrintException()
+    return(np.array(
+        [i % x_range,
+            int(i / x_range)]))
 
 
 def ArrayHash(input_arr: ndarray) -> bytes:
@@ -54,10 +54,7 @@ def ArrayHash(input_arr: ndarray) -> bytes:
         hash : `bytes`
             - byte hash of array using the numpy function `tobytes`.
     """
-    try:
-        return(hash(input_arr.tobytes()))
-    except Exception:
-        PE.PrintException()
+    return(hash(input_arr.tobytes()))
 
 
 def Dividend_Remainder(n: int | Int,
@@ -79,50 +76,47 @@ def Dividend_Remainder(n: int | Int,
             all integers.
 
     """
-    try:
-        t = int(t)
-        area = int(n * m)
+    t = int(t)
+    area = int(n * m)
 
-        if not (MAX_INT > area > MIN_INT):
-            raise ValueError('Input n and m are too large!')
-        if t > area:
-            return(0, area)
-        elif t == area:
-            return(1, 0)
+    # if not (MAX_INT > area > MIN_INT):
+    #     raise ValueError('Input n and m are too large!')
+    if t > area:
+        return([0, area])
+    elif t == area:
+        return([1, 0])
 
-        test = int(0)
-        div = int(0)
-        div_overflow = int(0)
-        OF_on = int(0)
-        prev = int(0)
-        while True:
-            test = int(t * div_overflow) + int(t << div)
+    test = 0
+    div = 0
+    div_overflow = 0
+    OF_on = 0
+    prev = 0
+    while True:
+        test = math.trunc(t * div_overflow) + math.trunc(t << div)
 
-            if prev > area and test > area:
-                return([int((t << div) / t + div_overflow),
-                        area-t*np.floor(area / t)])
+        if prev > area and test > area:
+            return([math.trunc((t << div) / t + div_overflow),
+                    area-t*np.floor(area / t)])
 
-            elif prev < area and test > area:
-                return([div,
-                        area-t*np.floor(area / t)])
+        elif prev < area and test > area:
+            return([div,
+                    area-t*np.floor(area / t)])
 
-            if test == area:
-                return([int((t << div) / t + div_overflow),
-                        area-t*np.floor(area / t)])
+        if test == area:
+            return([math.trunc((t << div) / t + div_overflow),
+                    area-t*np.floor(area / t)])
 
-            elif test < area:
-                prev = test
-                div += 1
-                continue
+        elif test < area:
+            prev = test
+            div += 1
+            continue
 
-            elif prev < area and OF_on == 0:
-                div_overflow += int((t << (div - 1)) / t)
-                prev = test
-                OF_on = 1
-                div = 1
-                continue
-    except Exception:
-        pass
+        elif prev < area and OF_on == 0:
+            div_overflow += math.trunc((t << (div - 1)) / t)
+            prev = test
+            OF_on = 1
+            div = 1
+            continue
 
 
 def round_num(input: Float,
@@ -146,27 +140,24 @@ def round_num(input: Float,
             value of the input must be to zero to round the number to
             `int`(`0`).
     """
-    try:
-        if isinstance(input, ndarray) is True:
-            ret_val = np.zeros(input.shape)
-            for i in range(len(input)):
-                if round_fig is not None:
-                    ret_val[i] = np.round(input[i], round_fig)
-                else:
-                    ret_val[i] = np.round(input[i], figures)
-                    if ret_val[i] is -0.0:  # intentional check for -0.0
-                        ret_val[i] = 0
-            return(ret_val)
-        else:
-            if np.abs(input) < 10**(-figures):
-                return(0)
+    if isinstance(input, ndarray) is True:
+        ret_val = np.zeros(input.shape)
+        for i in range(len(input)):
+            if round_fig is not None:
+                ret_val[i] = np.round(input[i], round_fig)
             else:
-                if round_fig is not None:
-                    return(np.round(input, round_fig))
-                else:
-                    return(np.round(input, figures))
-    except Exception:
-        PE.PrintException()
+                ret_val[i] = np.round(input[i], figures)
+                if ret_val[i] is -0.0:  # intentional check for -0.0
+                    ret_val[i] = 0
+        return(ret_val)
+    else:
+        if np.abs(input) < 10**(-figures):
+            return(0)
+        else:
+            if round_fig is not None:
+                return(np.round(input, round_fig))
+            else:
+                return(np.round(input, figures))
 
 
 def array_isclose(A: ndarray | list,
@@ -293,30 +284,13 @@ class Node:
         except Exception:
             PE.PrintException()
 
-    def get_connected(self) -> Node:
-        """
-            Returns
-            -------
-            generator to next neighbor
-        """
-        return(self.links)
-
-    def num_connected(self) -> int:
-        """
-            Returns
-            -------
-            nNumLinks : `int`
-                The integer number of nodes connected to `self`.
-        """
-        return(len(self.links))
-
     def get_coords(self) -> ndarray | str:
         return(self.coords)
 
     def get_coords_and_spin(self) -> ndarray:
         return(np.array([*self.coords, self.get_spin()]))
 
-    def get_index(self) -> NDArray | str:
+    def get_index(self) -> ndarray | str:
         """
             Parameters
             ----------
@@ -424,7 +398,7 @@ class LinkedLattice:
         self.setup_basis(basis_arr)
         self.setup_multithreading()
         self.__calcneighbor__()
-        self.__threadlauncher__(self.__generation_worker__, False)
+        self.__threadlauncher__(self.__generation_worker__, False, threads=1)
 
     def setup_basis(self, basis_arr):
         if basis_arr is not None:
@@ -461,30 +435,30 @@ class LinkedLattice:
         x = self.__shape[0]
         y = self.__shape[1]
         if self.tc != 1:
-            Div, Rem = Dividend_Remainder(x, y, self.tc)
+            DivRem = Dividend_Remainder(x, y, self.tc)
         if self.tc == 1:
             self.bounds.append([0, x*y-1])
-        elif not ((Div == 0) or (Div == 1)):
-            if Rem == 0:
+        elif not ((DivRem[0] == 0) or (DivRem[0] == 1)):
+            if DivRem[1] == 0:
                 # tc evenly divides the area so split the alttice into
-                # tc instances of Div Nodes total.
+                # tc instances of DivRem[0] Nodes total.
                 for i in range(self.tc):
-                    lower = i*Div
-                    upper = (i+1)*Div - 1
+                    lower = i*DivRem[0]
+                    upper = (i+1)*DivRem[0] - 1
                     self.bounds.append([lower, upper])
             else:
-                # create tc instances of Div size to sum
-                # tc instances of Div Nodes total.
+                # create tc instances of DivRem[0] size to sum
+                # tc instances of DivRem[0] Nodes total.
                 for i in range(self.tc):
-                    lower = i*Div
-                    upper = (i+1)*Div - 1
+                    lower = i*DivRem[0]
+                    upper = (i+1)*DivRem[0] - 1
                     self.bounds.append([lower, upper])
                 # append the extra
-                self.bounds.append([(self.tc+1)*Div - 1, x*y-1 - 1])
-        elif Div == 0:
+                self.bounds.append([(self.tc+1)*DivRem[0] - 1, x*y-1 - 1])
+        elif DivRem[0] == 0:
             self.tc = 1
             self.bounds.append([0, x*y-1 - 1])
-        elif Div == 1 and Rem != 0:
+        elif DivRem[0] == 1 and DivRem[1] != 0:
             self.bounds.append([0, self.tc - 1])
             self.bounds.append([self.tc, x*y-1 - 1])
             self.tc = 2
@@ -496,26 +470,19 @@ class LinkedLattice:
         except Exception:
             PE.PrintException()
 
-    # TODO analyse this function and include the generation function
-    # TODO was working on generation then got tired
     def __threadlauncher__(self,
                            run_function: Callable[[], list],
                            has_retval: bool,
-                           args_list: Optional[list] = None,
                            threads: Optional[int] = None) -> int | None:
         """
             TODO : write docstring
         """
         thread_count = threads if threads is not None else self.tc
-        if thread_count == 1:
-            bounds = [0, self.__shape[0]*self.__shape[1]]
-        else:
-            bounds = self.bounds
         with CF.ThreadPoolExecutor(max_workers=thread_count) as exe:
-            if args_list is not None:
+            if thread_count == 1:
                 futures = {exe.submit(
                     run_function,
-                    bound, args_list): bound for bound in bounds}
+                    [0, self.__shape[0]*self.__shape[1]])}
             else:
                 futures = {exe.submit(
                     run_function,
@@ -549,27 +516,21 @@ class LinkedLattice:
         # Begin by creating a visit list for keeping track of nodes we still
         # need to visit and a visited list that will keep track of what has
         # already been visited.
-        try:
-            sum: np.int64 = 0
-            lower_B = bounds[0]
-            upper_B = bounds[1]
-            for node in self.range(lower_B, upper_B):
-                sum += node.get_spin()
-            return(sum)
-        except Exception:
-            PE.PrintException()
+        sum: np.int64 = 0
+        lower_B = bounds[0]
+        upper_B = bounds[1]
+        for node in self.range(lower_B, upper_B):
+            sum += node.get_spin()
+        return(sum)
 
     def __NN_Worker__(self, bounds: list) -> int | Int:
-        try:
-            sum: np.int64 = 0
-            lower_B = bounds[0]
-            upper_B = bounds[1]
-            for node in self.range(lower_B, upper_B):
-                for nbr in node:
-                    sum += nbr.get_spin()
-            return(sum)
-        except Exception:
-            PE.PrintException()
+        sum: np.int64 = 0
+        lower_B = bounds[0]
+        upper_B = bounds[1]
+        for node in self.range(lower_B, upper_B):
+            for nbr in node:
+                sum += nbr.get_spin()
+        return(sum)
 
     def __iter__(self):
         try:
@@ -789,7 +750,7 @@ class LinkedLattice:
         """
         try:
             lower_B = bounds[0]
-            upper_B = bounds[1] + 1
+            upper_B = bounds[1]
             for i in range(lower_B, upper_B):
                 index = get_index(i, self.__shape[0])
                 coord = round_num(index.dot(self.basis_arr), 10)

@@ -5,6 +5,7 @@ Purpose: main driver file for ISING model simulation
 """
 # Begin by importing external libraries using path_setup
 # NOTE : Must be ran first, thus PEP8-E402
+import math
 import path_setup
 path_setup.path_setup()
 import sys  # noqa E402
@@ -32,25 +33,30 @@ def rand_time() -> int:
 
 def main(*args, **kwargs) -> int:
     try:
-        # all listed times are on a Ryzen 7 3700x
-        # 32x32     => ~44.75876808 seconds runtime
-        # 64x64     => ~81.04408002 seconds runtime
-        # 128x128   => ~245.7723527 seconds runtime
-        N = 64
-        M = 64
+        N = 128
+        M = 128
         size = [N, M]
-        total_time = 1000
+        total_time = math.trunc(np.sqrt(N*M))
         a = 0.1
-        b = 2
-        step = 0.25
+        b = 10
+        num_points = 100
+        step = (b-a)/num_points
         BJs = np.arange(a, b, step)
-        BJ = 0.1  # noqa
         output = ''
 
-        lt_a = lt(1, size)
-        lt_b = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
-        # print(lt_b.internal_arr.cord_dict)
-        lt_c = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
+        lt_c4v = lt(1, size)
+        lt_c3v = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
+        lt_c6v = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
+
+        # print('lt_a connected')
+        # for item in lt_a[1, 1]:
+        #     print(item)
+        # print('lt_b connected')
+        # for item in lt_b[1, 1]:
+        #     print(item)
+        # print('lt_c connected')
+        # for item in lt_c[1, 1]:
+        #     print(item)
 
         inF.print_stdout(
             "would you like to save plots automatically? (y/n): ")
@@ -74,12 +80,12 @@ def main(*args, **kwargs) -> int:
                 # DOCtest seed = 1644121893
                 # good seed 1644144314
                 seed = 1644121893
-                lt_a.randomize(voids=True, probs=[45, 45, 10],
-                               rand_seed=seed, quiet=False)
-                lt_b.randomize(voids=True, probs=[55, 40, 5],
-                               rand_seed=seed, quiet=False)
-                lt_c.randomize(voids=True, probs=[30, 65, 5],
-                               rand_seed=seed, quiet=False)
+                lt_c4v.randomize(voids=True, probs=[15, 80, 5],
+                                 rand_seed=seed)
+                lt_c3v.randomize(voids=True, probs=[49, 49, 2],
+                                 rand_seed=seed)
+                lt_c6v.randomize(voids=True, probs=[80, 15, 5],
+                                 rand_seed=seed)
 
             elif output == '1':
                 inF.print_stdout("option 1 chosen.", end='\n')
@@ -87,15 +93,15 @@ def main(*args, **kwargs) -> int:
                 output = inF.key_input(['y', 'n'])
                 voids_enable = True if output == 'y' else False
 
-                lt_a.randomize(voids=voids_enable, probs=[
+                lt_c4v.randomize(voids=voids_enable, probs=[
                     random(), random()],
                     rand_seed=rand_time(), quiet=False)
 
-                lt_b.randomize(voids=voids_enable, probs=[
+                lt_c3v.randomize(voids=voids_enable, probs=[
                      random(), random()],
                      rand_seed=rand_time(), quiet=False)
 
-                lt_c.randomize(voids=voids_enable, probs=[
+                lt_c6v.randomize(voids=voids_enable, probs=[
                      random(), random()],
                      rand_seed=rand_time(), quiet=False)
 
@@ -105,19 +111,9 @@ def main(*args, **kwargs) -> int:
                 exit()
 
             if auto_plot is True:
-                lt_a.display()
-                lt_b.display()
-                lt_c.display()
-
-            # print('lt_a connected')
-            # for item in lt_a[1, 1].get_connected():
-            #     print(item)
-            # print('lt_b connected')
-            # for item in lt_b[1, 1].get_connected():
-            #     print(item)
-            # print('lt_c connected')
-            # for item in lt_c[1, 1].get_connected():
-            #     print(item)
+                lt_c4v.display()
+                lt_c3v.display()
+                lt_c6v.display()
 
             inF.print_stdout(
                 f"BJ range= [{a},{b}]. Steps= {step}. Change (y/n)? ")
@@ -145,16 +141,14 @@ def main(*args, **kwargs) -> int:
             # lt_c.metropolis(total_time, BJ, progress=True,
             #                 save=auto_save, auto_plot=auto_plot)
 
-            # get_spin_energy is 100% complete in 34.30839276s on my home
-            # desktop with n=36, m=42, threads=16 on a Ryzen 7 3700X @
-            # 2.6-4.5Ghz using the seed=1644121893 with gaussian prob settings
-            # of [0.25, 0.4].
-            lt_a.get_spin_energy(BJs, total_time, save=auto_save,
-                                 auto_plot=auto_plot)
-            lt_b.get_spin_energy(BJs, total_time, save=auto_save,
-                                 auto_plot=auto_plot)
-            lt_c.get_spin_energy(BJs, total_time, save=auto_save,
-                                 auto_plot=auto_plot)
+            lt_c4v.get_spin_energy(BJs, total_time, save=auto_save,
+                                   auto_plot=auto_plot)
+
+            lt_c3v.get_spin_energy(BJs, total_time, save=auto_save,
+                                   auto_plot=auto_plot)
+
+            lt_c6v.get_spin_energy(BJs, total_time, save=auto_save,
+                                   auto_plot=auto_plot)
     except KeyboardInterrupt:
         inF.cls()
         inF.print_stdout("Keyboard Interrupt, closing...", end='\n')
