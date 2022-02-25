@@ -19,6 +19,7 @@ from getpass import getpass  # noqa E402
 from random import random  # noqa E402
 import Data_Analysis as DA  # noqa E402
 import warnings  # noqa E402
+import cProfile  # noqa E402
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 sys.setrecursionlimit(1000000)  # increase recursion limit
 
@@ -35,13 +36,13 @@ def main(*args, **kwargs) -> int:
         # 32x32     => ~44.75876808 seconds runtime
         # 64x64     => ~81.04408002 seconds runtime
         # 128x128   => ~245.7723527 seconds runtime
-        N = 128
-        M = 128
+        N = 64
+        M = 64
         size = [N, M]
         total_time = 1000
         a = 0.1
         b = 2
-        step = 0.05
+        step = 0.25
         BJs = np.arange(a, b, step)
         BJ = 0.1  # noqa
         output = ''

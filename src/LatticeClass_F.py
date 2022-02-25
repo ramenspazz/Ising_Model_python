@@ -189,7 +189,7 @@ class lattice_class:
                           np.array([__times, 2])) is False:
             self.set_time(__times)
         SE_mtx = self.ZERO_mtx
-        ms = np.zeros(len(BJs))
+        mean_spin = np.zeros(len(BJs))
         E_means = np.zeros(len(BJs))
         E_stds = np.zeros(len(BJs))
         start = time.time()
@@ -200,22 +200,22 @@ class lattice_class:
         for i, bj in enumerate(BJs):
             inF.print_stdout(
                 f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
+
             SE_mtx = self.metropolis(times, bj, save=False, auto_plot=False,
                                      quiet=True)
             spins = SE_mtx[:, 0]
             energies = SE_mtx[:, 1]
-            ms[i] = spins[-times:].mean()/len(self.internal_arr)
+
+            mean_spin[i] = spins[-times:].mean()/len(self.internal_arr)
             E_means[i] = energies[-times:].mean()
             E_stds[i] = energies[-times:].std()
-            inF.print_stdout(
-                f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
         end = time.time()
         inF.print_stdout(
             f"get_spin_energy is 100% complete in {end-start:.8f} seconds!",
             end='\n')
-        self.plot_spin_energy(BJs, ms, E_stds, save=save, auto_plot=auto_plot,
-                              times=times)
-        return(ms, E_means, E_stds)
+        self.plot_spin_energy(BJs, mean_spin, E_stds, save=save,
+                              auto_plot=auto_plot, times=times)
+        return(mean_spin, E_means, E_stds)
 
     def plot_spin_energy(self, bjs: ndarray,
                          ms: ndarray | list,
@@ -238,6 +238,67 @@ class lattice_class:
         if auto_plot is True:
             plt.show()
 
+# TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
+# TODO: the worm algorithm.
+    def metropolis(self, times: int | Int, BJ: float | Float,
+                   progress: Optional[bool] = None,
+                   quiet: Optional[bool] = False,
+                   save: Optional[bool] = False,
+                   auto_plot: Optional[bool] = True) -> ndarray:
+        """
+            Purpose
+            -------
+            Evolve the system and compute the metroplis approximation to the
+            equlibrium state given a beta*J and number of monty carlo
+            itterations to preform.
+        """
+        try:
+            if self.time != times:
+                self.set_time(times)
+            netSE_mtx = self.ZERO_mtx
+            energy = self.internal_arr.__threadlauncher__(
+                self.internal_arr.__NN_Worker__, True)
+            if progress is True:
+                inF.print_stdout(
+                    'Computing Metropolis Algorithm with iterations'
+                    f'={times}...')
+
+            for i in range(times):
+                # pick random point on array and flip spin
+                rand_xy = [randint(0, self.Lshape[0] - 1),
+                           randint(0, self.Lshape[1] - 1)]
+                node_i = self.internal_arr[rand_xy]  # initial spin
+
+                # compute change in energy with nearest neighbors
+                E_i: np.int64 = 0
+                E_f: np.int64 = 0
+
+                # call multithread neighbors sum
+                for neighbor in node_i:
+                    E_i += node_i * neighbor
+                    E_f += -1 * node_i * neighbor
+
+                # change state with designated probabilities
+                dE = E_f-E_i
+
+                if (dE > 0) and ((randint(0, 100) / 100) < np.exp(-BJ * dE)):
+                    self.internal_arr[rand_xy].flip_spin()
+                elif dE <= 0:
+                    self.internal_arr[rand_xy].flip_spin()
+
+                netSE_mtx[i, 0] = self.internal_arr.__threadlauncher__(
+                    self.internal_arr.__Sum_Worker__, has_retval=True)
+                energy += dE
+                netSE_mtx[i, 1] = energy
+            # for i in range(0, times):
+            if progress is True:
+                inF.print_stdout('Metropolis Algorithm complete!')
+            if quiet is False:
+                self.plot_metrop(netSE_mtx, BJ, save=save, auto_plot=auto_plot)
+            return(netSE_mtx)
+        except Exception:
+            PE.PrintException()
+
     def plot_metrop(self, SE_mtx: ndarray, BJ: list | ndarray,
                     times: Optional[int] = None,
                     quiet: Optional[bool] = True,
@@ -246,9 +307,25 @@ class lattice_class:
         """
         Parameters
         ----------
-        BJ
-        """
+        SE_mtx : `ndarray`
+            - spin energy matrix to plot.
 
+        BJ : `list` | `ndarray`
+            - list or ndarray of BJ range that generated the SE_mtx.
+
+        times : Optional[`int`]
+            - Number of times the system was evolved in time.
+
+        quiet : Optional[`bool`] = `True`
+            - If quiet is Flase, the method will print statistics about the
+            data in SE_mtx.
+
+        save : Optional[`bool`] = `False`
+            - If True, the method will save the output plot.
+
+        auto_plot : Optional[`bool`] = `True`
+            - If True, the method will automatically plot the output plot.
+        """
         num_nodes = len(self.internal_arr)
         if quiet is False:
             spin_up = 0
@@ -293,80 +370,6 @@ class lattice_class:
         if auto_plot is True:
             plt.show()
 
-# TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
-# TODO: the worm algorithm.
-    def metropolis(self, times: int | Int, BJ: float | Float,
-                   progress: Optional[bool] = None,
-                   quiet: Optional[bool] = False,
-                   save: Optional[bool] = False,
-                   auto_plot: Optional[bool] = True) -> ndarray:
-        """
-            Purpose
-            -------
-            Evolve the system and compute the metroplis approximation to the
-            equlibrium state given a beta*J and number of monty carlo
-            itterations to preform.
-        """
-        try:
-            if self.time != times:
-                self.set_time(times)
-            SE_mtx = self.ZERO_mtx
-            energy = self.internal_arr.__threadlauncher__(
-                self.internal_arr.__NN_Worker__, True)
-            if progress is True:
-                inF.print_stdout(
-                    'Computing Metropolis Algorithm with iterations'
-                    f'={times}...')
-            for i in range(0, times):
-                # pick random point on array and flip spin
-                while True:
-                    rand_x = randint(0, self.Lshape[0] - 1)
-                    rand_y = randint(0, self.Lshape[1] - 1)
-                    node_i = self.internal_arr[rand_x, rand_y]  # initial spin
-                    if node_i is None:
-                        # keep looking for a viable random node
-                        continue
-                    elif node_i.get_spin() == 0:
-                        continue
-                    else:
-                        # exit random node selection loop
-                        break
-
-                # compute change in energy with nearest neighbors
-                E_i: np.int64 = 0
-                E_f: np.int64 = 0
-
-                # call multithread neighbors sum
-                for neighbor in node_i.get_connected():
-                    if neighbor.get_spin() == 0:
-                        continue
-                    E_i += -node_i.get_spin() * neighbor.get_spin()
-                    E_f += -node_i.flip_test() * neighbor.get_spin()
-
-                # change state with designated probabilities
-                dE = E_f-E_i
-
-                if (dE > 0) and ((randint(0, 100) / 100) < np.exp(-BJ * dE)):
-                    self.internal_arr[rand_x, rand_y].flip_spin()
-
-                elif dE <= 0:
-                    self.internal_arr[rand_x, rand_y].flip_spin()
-
-                spin = self.internal_arr.__threadlauncher__(
-                    self.internal_arr.__Sum_Worker__, True)
-                energy += dE
-
-                SE_mtx[i, 0] = spin
-                SE_mtx[i, 1] = energy
-            # for i in range(0, times):
-            if progress is True:
-                inF.print_stdout('Metropolis Algorithm complete!')
-            if quiet is False:
-                self.plot_metrop(SE_mtx, BJ, save=save, auto_plot=auto_plot)
-            return(SE_mtx)
-        except Exception:
-            PE.PrintException()
-
     def randomize(self,
                   voids: bool,
                   probs: list,
@@ -395,22 +398,18 @@ class lattice_class:
                 if quiet is not True:
                     inF.print_stdout(f"Generating Seed = {rand_seed}",
                                      end='\n')
-                tot_size = self.Lshape[0]*self.Lshape[1]
                 random.seed(rand_seed)
-                for i in range(self.Lshape[0]):
-                    if voids is True:
-                        my_list = [-1]*probs[0] + [1]*probs[1] + [0]*probs[2]
-                        for j in range(self.Lshape[1]):
-                            rand_num = random.choice(my_list)
-                            if rand_num == 0:
-                                self.internal_arr.num_voids += 1
-                            self[i, j] = rand_num
-                    elif voids is False:
-                        my_list = [-1]*probs[0] + [1]*probs[1]
-                        for j in range(self.Lshape[1]):
-                            rand_num = random.choice(my_list)
-                            self[i, j] = rand_num
-            if self.internal_arr.num_voids == tot_size:
+                if voids is True:
+                    my_list = [-1]*probs[0] + [1]*probs[1] + [0]*probs[2]
+                elif voids is False:
+                    my_list = [-1]*probs[0] + [1]*probs[1]
+                for node in self.internal_arr:
+                    rand_num = random.choice(my_list)
+                    if rand_num == 0:
+                        self.internal_arr.num_voids += 1
+                    if node is not None:
+                        node.set_spin(rand_num)
+            if self.internal_arr.num_voids == self.shape()[0]*self.shape()[1]:
                 raise ValueError("All nodes are voids! Please choose different"
                                  " values for your gaussian distribution, or"
                                  " you\'re just reaaaaaally unlucky.")

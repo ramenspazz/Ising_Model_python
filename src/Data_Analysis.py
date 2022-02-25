@@ -7,21 +7,17 @@ https://github.com/ramenspazz/Physics-stuff/blob/main/LICENSE
 
 Purpose: 
 # These functions are designed to do basic data analysis off of a text file.
-# Include this file in your project and pass the functions the name of the data-
-# file you would like to use.
+# Include this file in your project and pass the functions the name of the
+# data-file you would like to use.
 '''
-
-from cmath import nan
 from numbers import Number
-from numpy import number
-from typing import Optional, Union
+from numpy import ndarray, number
+from typing import Optional, Union  # noqa F401
 import math
-import re
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import modeling
-import sympy as sym
-import sys
+import sympy as sym  # noqa F401
 import PrintException as PE
 from math import log10, floor
 
@@ -60,46 +56,50 @@ def plot_2D(x_data, y_data, xaxis_name=None, yaxis_name=None, data_name=None):
     '''
     fig, axs = plt.subplots(1, constrained_layout=True)
 
-    if data_name==None:
+    if data_name is None:
         plot_label = 'Data'
     else:
         plot_label = f'{data_name} data'
 
     plt.plot(x_data,y_data, '.', label=plot_label)
 
-    if (not xaxis_name==None) and (not yaxis_name==None):
+    if (xaxis_name is not None) and (yaxis_name is not None):
         plt.xlabel(xaxis_name)
         plt.ylabel(yaxis_name)
         axs.legend()
     plt.show()
 
-def plot_2D_with_fit(x_data, y_data, fit_m, fit_b, num_data, errors=None, xaxis_name = None, yaxis_name = None, data_name=None):
+
+def plot_2D_with_fit(x_data, y_data, fit_m, fit_b, num_data, errors=None,
+                     xaxis_name=None, yaxis_name=None, data_name=None):
     '''
     Plots data with a linear fit overlayed on a scatter-plot of the input data.
     '''
     try:
-        fig, axs = plt.subplots(1,constrained_layout=True)
-        x = np.linspace(min(x_data),max(x_data),num=num_data,endpoint=True)
-        if data_name==None:
+        fig, axs = plt.subplots(1, constrained_layout=True)
+        x = np.linspace(min(x_data), max(x_data), num=num_data, endpoint=True)
+        if data_name is None:
             plot_label = 'Data'
         else:
             plot_label = f'{data_name} data'
         
-        plt.scatter(x_data,y_data, marker='.', s=150, label=plot_label)
-        if not errors is None:
+        plt.scatter(x_data, y_data, marker='.', s=150, label=plot_label)
+        if errors is not None:
             (_, caps, _) = plt.errorbar(x_data,y_data,yerr=errors,fmt='.', capsize=5, elinewidth=1, Color='RED')
             for cap in caps:
                 cap.set_color('RED')
                 cap.set_markeredgewidth(1)
-        
-        plt.plot(x,fit_m * x + fit_b, '-', label=f'y={round_sig(fit_m,sig=4)}x+({round_sig(fit_b,sig=4)})')
+
+        plt.plot(x, fit_m * x + fit_b, '-',
+                 label=f'y={round_sig(fit_m,sig=4)}'
+                 f'x+({round_sig(fit_b,sig=4)})')
         if not(xaxis_name is None) and not(yaxis_name is None):
             plt.xlabel(xaxis_name)
             plt.ylabel(yaxis_name)
             plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left',
-            ncol=2, mode='expand', borderaxespad=0.)
+                       ncol=2, mode='expand', borderaxespad=0.)
         plt.show()
-    except:
+    except Exception:
         PE.PrintException()
 
 def parse_data_file(f_name, data_cols):
@@ -123,9 +123,9 @@ def parse_data_file(f_name, data_cols):
             for i, line in enumerate(content):
                 temp_line = line.split()
                 for j, data_line in enumerate(data_cols):
-                    out_data[i,j] = float(temp_line[data_line])
+                    out_data[i, j] = float(temp_line[data_line])
         return(out_data)
-    except:
+    except Exception:
         PE.PrintException()
 
 def LS_fit(x_data,y_data):
@@ -207,7 +207,7 @@ def WLS_fit(x_data=None, y_data=None, errors=None, weight_data=None,xaxis_name=N
             return(out_vec, fit_string)
         else:
             raise Exception('Idk what happened, but it happened...')
-    except:
+    except Exception:
         PE.PrintException()
 
 def PCA_fit(data_mtx):
@@ -343,7 +343,7 @@ def std_dev(data, mean, sample=True):
     except Exception:
         PE.PrintException()
 
-def ordinal_stats(sorted_vec):
+def ordinal_stats(sorted_vec: list | ndarray) -> tuple:
     """
     Returns the minimum, maximum, and median values of a list of real-numbers.
     """
@@ -355,7 +355,7 @@ def ordinal_stats(sorted_vec):
         else:
             median = sorted_vec[int(len(sorted_vec)/2)]
         return(minimum,maximum,median)
-    except:
+    except Exception:
         PE.PrintException()
         
 def covariance(x,y):
@@ -374,7 +374,7 @@ def covariance(x,y):
         cov_xy = cov_xy/len(x)
         r = cov_xy/(sx*sy)
         return(cov_xy,r)
-    except:
+    except Exception:
         PE.PrintException()
 
 def stats(data, sample=True, quiet=False):
@@ -406,7 +406,7 @@ def stats(data, sample=True, quiet=False):
         
         return(minimum, maximum, median, mean, standard_deviation)
 
-    except:
+    except Exception:
         PE.PrintException()
 
 def fit_gaussian(data, mean, sd, n_bins=None, bin_width=None, condense=False, quiet=True):
@@ -464,5 +464,5 @@ def fit_gaussian(data, mean, sd, n_bins=None, bin_width=None, condense=False, qu
             ncol=2, mode='expand', borderaxespad=0.)
         plt.show()
         return(norm_const)
-    except:
+    except Exception:
         PE.PrintException()

@@ -13,10 +13,9 @@ from numpy.typing import NDArray
 from numpy import int64, int8, integer as Int, floating as Float, ndarray, number  # noqa E501
 # Functions and Libraries
 import tkinter  # noqa : TODO use it later
-import sys
 import numpy as np
 import PrintException as PE
-import threading as td  # noqa TODO : use it later
+from threading import RLock
 import multiprocessing
 import concurrent.futures as CF
 import input_funcs as inF
@@ -30,17 +29,32 @@ MIN_INT = pow(-2, 31)
 MAX_INT = pow(2, 31) - 1
 
 
-def ArrayHash(input_arr: ndarray) -> bytes:
+def get_index(i: int, x_range: int) -> ndarray:
     """
-        Mutating function that returns a hash of an array. Will replace any
-        instance of -0.0 with 0.
+        Returns
+        -------
+        index : `ndarray`[`int`]
+            - A 1D numpy ndarray with 2 entries listing a (x,y) pair given an
+            input integer `i` that maps to the 2D plane.
     """
     try:
-        if len(input_arr.shape) != 1:
-            raise ValueError('Input array must be 1 dimensional!')
-        for i in range(len(input_arr)):
-            if input_arr[i] is -0.0:  # explicitly look for -0.0, not an error
-                input_arr[i] = 0
+        return(np.array(
+            [i % x_range,
+             int(i / x_range)]))
+    except Exception:
+        PE.PrintException()
+
+
+def ArrayHash(input_arr: ndarray) -> bytes:
+    """
+        Pray IEEE 754 is not in the array.
+
+        Returns
+        -------
+        hash : `bytes`
+            - byte hash of array using the numpy function `tobytes`.
+    """
+    try:
         return(input_arr.tobytes())
     except Exception:
         PE.PrintException()
@@ -155,31 +169,6 @@ def round_num(input: Float,
         PE.PrintException()
 
 
-def angle_between(v1, v2):
-    """ Returns the angle in radians between vectors 'v1' and 'v2'::
-
-            >>> angle_between((1, 0, 0), (0, 1, 0))
-            1.5707963267948966
-            >>> angle_between((1, 0, 0), (1, 0, 0))
-            0.0
-            >>> angle_between((1, 0, 0), (-1, 0, 0))
-            3.141592653589793
-    """
-    v1_u = np.linalg.norm(v1)
-    v2_u = np.linalg.norm(v2)
-    return(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
-
-
-def distance_between(A: ndarray, B: ndarray) -> float | int:
-    try:
-        if np.array_equiv(A.shape, B.shape) is False:
-            raise ValueError('Shape of the two inputs must be equal!'
-                             f' Shapes are {A.shape} and {B.shape}.')
-        return(round_num(np.sqrt((A[0]-B[0])**2 + (A[1] - B[1])**2), 10))
-    except Exception:
-        PE.PrintException()
-
-
 def array_isclose(A: ndarray | list,
                   B: ndarray | list,
                   round_fig: Optional[float] = 1E-09) -> bool:
@@ -238,7 +227,6 @@ class Node:
                 self.combination: NDArray[Int] = None
             self.coords: NDArray[Float] = np.array(coords)
             self.links = list()
-            self.foward_link: Node = None
         except Exception:
             PE.PrintException()
 
@@ -254,6 +242,22 @@ class Node:
 
     def __setitem__(self, __value: int) -> None:
         self.spin_state = __value
+
+    def __rmul__(self, LHS: int | Node) -> int:
+        """
+            Overview
+            --------
+            Multiplication operator overload for nodes.
+
+            Parameters
+            ----------
+            RHS : `int` | `Node`
+                Right hand side for multiplication.
+        """
+        if isinstance(LHS, Node) is True:
+            return(self.spin_state * LHS.spin_state)
+        else:
+            return(self.spin_state * LHS)
 
     def __mul__(self, RHS: int | Node) -> int:
         """
@@ -306,17 +310,11 @@ class Node:
         """
         return(len(self.links))
 
-    def set_forward_link(self, next: Node) -> None:
-        self.foward_link = next
-
-    def get_foward_link(self) -> Node:
-        return(self.foward_link)
-
     def get_coords(self) -> ndarray | str:
         return(self.coords)
 
     def get_coords_and_spin(self) -> ndarray:
-        return(np.array([*self.coords, self.spin_state]))
+        return(np.array([*self.coords, self.get_spin()]))
 
     def get_index(self) -> NDArray | str:
         """
@@ -341,6 +339,9 @@ class Node:
         """
         return(self.spin_state)
 
+    def set_spin(self, spin) -> None:
+        self.spin_state = spin
+
     def flip_spin(self):
         """
             Purpose
@@ -349,47 +350,25 @@ class Node:
             then do nothing.
         """
         try:
-            if self.spin_state == 0:
-                sys.stderr.write("empty node, can not flip spin!")
-            elif self.spin_state == 1:
+            if self.get_spin() == 0:
+                return
+            elif self.get_spin() == 1:
                 self.spin_state = -1
-            elif self.spin_state == -1:
+                return
+            elif self.get_spin() == -1:
                 self.spin_state = 1
-            else:
-                raise ValueError(
-                    f"""
-                    Expected spin_state to  be -1, 0 or 1. Got
-                    ({self.spin_state}, type: {type(self.spin_state)}).
-                    """)
+                return
         except Exception:
             PE.PrintException()
 
     def flip_test(self) -> int:
         try:
-            if self.spin_state != 0:
-                return(-1 if self.spin_state == 1 else -1)
+            if self.get_spin() != 0:
+                return(-1 if self.get_spin() == 1 else -1)
             else:
                 return(0)
         except Exception:
             PE.PrintException()
-
-
-def rotation_mtx(arg: float | Float) -> NDArray:
-    """
-        Returns
-        -------
-        This function returns a 2D rotation matrix of a specified argument.
-
-        Parameters
-        ----------
-        arg : `float`
-            The angle the rotation matrix will rotate counter-clockwise from.
-    """
-    temp = np.array([
-        [np.cos(arg), -np.sin(arg)],
-        [np.sin(arg), np.cos(arg)]
-    ])
-    return(temp)
 
 
 class CoordinateDict(TypedDict):
@@ -412,7 +391,8 @@ class LinkedLattice:
     def __init__(self,
                  scale_factor: Float,
                  __shape: list,
-                 basis_arr: Optional[NDArray[Float]] = None):
+                 basis_arr: Optional[NDArray[Float]] = None,
+                 threads: Optional[int] = None):
         """
             Parameters
             ----------
@@ -422,8 +402,31 @@ class LinkedLattice:
                 A `2x2` numpy 'array' of `floats`. Defaults to standard R2
                 Euclidean basis if no basis is specified.
         """
+        self.lock = RLock()
         self.scale_factor: Float = scale_factor
-        # This is a list of 2 basis vectors in R2
+        self.node_dict: CoordinateDict = {}
+        self.cord_dict: CoordinateDict = {}
+        self.num_nodes: int = int(0)
+        self.num_voids: int = int(0)
+        self.origin_node: Node = Node([0, 0], [0, 0])
+        self.__shape = __shape
+        self.b1_plus_b2_len: float = None
+        self.nbrs_list: list[list[ndarray]] = list()
+        self.visited = list()
+        self._sum: int | Int = int(0)
+        self.rots = 0
+        self.basis_arr = basis_arr
+        self.bounds: list = []
+        if threads is None:
+            self.tc = multiprocessing.cpu_count()  # threadcount
+        else:
+            self.tc = threads
+        self.setup_basis(basis_arr)
+        self.setup_multithreading()
+        self.__calcneighbor__()
+        self.__threadlauncher__(self.__generation_worker__, False, threads=1)
+
+    def setup_basis(self, basis_arr):
         if basis_arr is not None:
             if isinstance(basis_arr, ndarray) is not True:
                 basis_arr = np.array(basis_arr)
@@ -453,58 +456,45 @@ class LinkedLattice:
             self.basis_arr: NDArray[Float] = np.array(
                 [[1, 0], [0, 1]])
             self.rots: int = 4
-        self.b1_plus_b2_len: float = None
-        self.nbrs_list: list[list[ndarray]] = list()
-        self.__calcneighbor__()
-        self.node_dict: CoordinateDict = {}
-        self.cord_dict: CoordinateDict = {}
-        self.num_nodes: int = int(0)
-        self.num_voids: int = int(0)
-        self.origin_node: Node = None
-        self.__shape = __shape
-        self.__threadlauncher__(self.__generation_worker__, False, threads=1)
-        self.visited = list()
-        self._sum: int | Int = int(0)
-        self.fll_generated = False
 
-    def make_linear_linkedlist(self) -> None:
+    def setup_multithreading(self):
+        x = self.__shape[0]
+        y = self.__shape[1]
+        if self.tc != 1:
+            Div, Rem = Dividend_Remainder(x, y, self.tc)
+        if self.tc == 1:
+            self.bounds.append([0, x*y-1])
+        elif not ((Div == 0) or (Div == 1)):
+            if Rem == 0:
+                # tc evenly divides the area so split the alttice into
+                # tc instances of Div Nodes total.
+                for i in range(self.tc):
+                    lower = i*Div
+                    upper = (i+1)*Div - 1
+                    self.bounds.append([lower, upper])
+            else:
+                # create tc instances of Div size to sum
+                # tc instances of Div Nodes total.
+                for i in range(self.tc):
+                    lower = i*Div
+                    upper = (i+1)*Div - 1
+                    self.bounds.append([lower, upper])
+                # append the extra
+                self.bounds.append([(self.tc+1)*Div - 1, x*y-1 - 1])
+        elif Div == 0:
+            self.tc = 1
+            self.bounds.append([0, x*y-1 - 1])
+        elif Div == 1 and Rem != 0:
+            self.bounds.append([0, self.tc - 1])
+            self.bounds.append([self.tc, x*y-1 - 1])
+            self.tc = 2
+
+    def range(self, start: int, stop: int, step: Optional[int] = None) -> Node:
         try:
-            cur = self[0, 0]
-            for i in range(self.num_nodes):
-                coords_p1 = [
-                        (i+1) % self.__shape[0],
-                        int((i+1) / self.__shape[0])]
-                next_node = self[coords_p1]
-                if next_node is not None:
-                    cur.set_forward_link(next_node)
-                    cur = next_node
-                else:
-                    raise IndexError(
-                        f"Index {i} is out of bounds in linked list!")
-            self.fll_generated = True
-            inF.print_stdout("Sucessfully generated fowardly linked list!")
-        except IndexError:
-            self.fll_generated = True
-            return
+            for i in range(start, stop):
+                yield self[get_index(i, self.__shape[0])]
         except Exception:
             PE.PrintException()
-
-    def range(self, start: int, stop: int, step: Optional[int] = None):
-        curr: Node = self.origin_node
-        if step is None:
-            step = 1
-        curr: Node = self.origin_node
-        index_check = stop - start
-        index = 0
-        curr = self[start]
-        while curr is not None and index_check >= index:
-            yield(curr)
-            for i in range(step):
-                curr = curr.get_foward_link()
-                if curr is None:
-                    return
-            index += step
-        return
 
     # TODO analyse this function and include the generation function
     # TODO was working on generation then got tired
@@ -513,43 +503,15 @@ class LinkedLattice:
                            has_retval: bool,
                            args_list: Optional[list] = None,
                            threads: Optional[int] = None) -> int | None:
-        res = 0
-        if threads is None:
-            tc = multiprocessing.cpu_count()  # threadcount
+        """
+            TODO : write docstring
+        """
+        thread_count = threads if threads is not None else self.tc
+        if thread_count == 1:
+            bounds = [0, self.__shape[0]*self.__shape[1]]
         else:
-            tc = threads
-        bounds: list = list()
-        x = self.__shape[0]
-        y = self.__shape[1]
-        if tc != 1:
-            Div, Rem = Dividend_Remainder(x, y, tc)
-        if tc == 1:
-            bounds.append([0, x*y-1])
-        elif not ((Div == 0) or (Div == 1)):
-            if Rem == 0:
-                # tc evenly divides the area so split the alttice into
-                # tc instances of Div Nodes total.
-                for i in range(tc):
-                    lower = i*Div
-                    upper = (i+1)*Div - 1
-                    bounds.append([lower, upper])
-            else:
-                # create tc instances of Div size to sum
-                # tc instances of Div Nodes total.
-                for i in range(tc):
-                    lower = i*Div
-                    upper = (i+1)*Div - 1
-                    bounds.append([lower, upper])
-                # append the extra
-                bounds.append([(tc+1)*Div - 1, x*y-1 - 1])
-        elif Div == 0:
-            tc = 1
-            bounds.append([0, x*y-1 - 1])
-        elif Div == 1 and Rem != 0:
-            bounds.append([0, tc - 1])
-            bounds.append([tc, x*y-1 - 1])
-            tc = 2
-        with CF.ThreadPoolExecutor(max_workers=tc) as exe:
+            bounds = self.bounds
+        with CF.ThreadPoolExecutor(max_workers=thread_count) as exe:
             if args_list is not None:
                 futures = {exe.submit(
                     run_function,
@@ -557,8 +519,9 @@ class LinkedLattice:
             else:
                 futures = {exe.submit(
                     run_function,
-                    bound): bound for bound in bounds}
+                    bound): bound for bound in self.bounds}
             if has_retval:
+                res = 0
                 for future in CF.as_completed(futures):
                     try:
                         data = future.result()
@@ -569,7 +532,7 @@ class LinkedLattice:
         if has_retval:
             return(res)
         else:
-            return()
+            return
 
     def __Sum_Worker__(self, bounds: list | ndarray) -> int | Int:
         """
@@ -590,7 +553,6 @@ class LinkedLattice:
             sum: np.int64 = 0
             lower_B = bounds[0]
             upper_B = bounds[1]
-
             for node in self.range(lower_B, upper_B):
                 sum += node.get_spin()
             return(sum)
@@ -602,10 +564,9 @@ class LinkedLattice:
             sum: np.int64 = 0
             lower_B = bounds[0]
             upper_B = bounds[1]
-
             for node in self.range(lower_B, upper_B):
                 for nbr in node:
-                    sum += nbr.spin_state
+                    sum += nbr.get_spin()
             return(sum)
         except Exception:
             PE.PrintException()
@@ -614,11 +575,8 @@ class LinkedLattice:
         try:
             if self.origin_node is None:
                 raise ValueError("Iterator : origin node is None!")
-            curr: Node = self.origin_node
-            while curr is not None:
-                yield(curr)
-                curr = curr.get_foward_link()
-            return
+            for i in range(self.num_nodes):
+                yield(self[get_index(i, self.__shape[0])])
         except Exception:
             PE.PrintException()
 
@@ -626,11 +584,8 @@ class LinkedLattice:
         try:
             if self.origin_node is None:
                 raise ValueError("Iterator : origin node is None!")
-            curr: Node = self.origin_node
-            while curr is not None:
-                yield(curr)
-                curr = curr.get_foward_link()
-            return
+            for i in range(self.num_nodes):
+                yield(self[get_index(i, self.__shape[0])])
         except Exception:
             PE.PrintException()
 
@@ -655,7 +610,7 @@ class LinkedLattice:
                 __NodeIndex
             lookup = self.node_dict.get(ArrayHash(cor))
             if lookup is not None:
-                lookup.spin_state = __value
+                lookup.set_spin = __value
             elif lookup is None:
                 raise ValueError(f"Node {__NodeIndex} does not exist!")
         except Exception:
@@ -683,10 +638,7 @@ class LinkedLattice:
                 if __NodeIndex > self.num_nodes - 1:
                     raise IndexError(f'Index {__NodeIndex} is out of bounds'
                                      f' for max index of {self.num_nodes-1:}!')
-                cur = self.origin_node
-                for i in range(__NodeIndex):
-                    cur = self.origin_node.get_foward_link()
-                return(cur)
+                return(self[get_index(__NodeIndex)])
             else:
                 lookup = np.array(__NodeIndex) if (type(__NodeIndex) == tuple or type(__NodeIndex) == list) else __NodeIndex  # noqa E501 lazy
                 return(self.node_dict.get(ArrayHash(lookup)))
@@ -839,9 +791,7 @@ class LinkedLattice:
             lower_B = bounds[0]
             upper_B = bounds[1] + 1
             for i in range(lower_B, upper_B):
-                index = np.array([
-                        i % self.__shape[0],
-                        int(i / self.__shape[0])])
+                index = get_index(i, self.__shape[0])
                 coord = round_num(index.dot(self.basis_arr), 10)
                 node = self[index]
                 if node is None:
@@ -855,10 +805,9 @@ class LinkedLattice:
                                    (index[0] < self.__shape[0]))
                     y_in_bounds = ((index[1] >= 0) and
                                    (index[1] < self.__shape[1]))
-                    # print(index, x_in_bounds and y_in_bounds)
                     if x_in_bounds and y_in_bounds:
-                        # print('sajdflkasdlkjfa;lksdjf;')
-                        possible_nb = self[index]
+                        with self.lock:
+                            possible_nb = self[index]
                         if possible_nb is not None:
                             node.add_link(possible_nb)
                         else:
@@ -866,30 +815,3 @@ class LinkedLattice:
                             self.append(new_node, node)
         except Exception:
             PE.PrintException()
-
-    # def generate(self) -> None:
-    #     try:
-    #         if self.basis_arr is None:
-    #             raise ValueError("Error, Basis must first be defined!")
-    #         inF.print_stdout(" Generating, Please wait...")
-    #         # Begin creating the origin node
-    #         self.append(Node([0, 0], [0, 0]))
-    #         cur = self.origin_node
-    #         for i in range(self.__shape[0]):
-    #             for j in range(self.__shape[1]):
-    #                 if i == j == 0:
-    #                     continue
-    #                 combo = [i, j]
-    #                 next_node = Node(
-    #                     np.array(combo).dot(self.basis_arr),
-    #                     combo)
-    #                 self.append(next_node)
-    #                 cur.set_forward_link(next_node)
-    #                 cur = next_node
-    #         self.fll_generated = True
-    #         for value in self.node_dict.values():
-    #             self.cord_dict[ArrayHash(value.get_coords())] = value
-    #         self.__threadlauncher__(self.__generation_worker__, False, threads=1)
-    #         inF.print_stdout(' Generation complete!', end='\n')
-    #     except Exception:
-    #         PE.PrintException()
