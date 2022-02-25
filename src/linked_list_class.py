@@ -424,7 +424,7 @@ class LinkedLattice:
         self.setup_basis(basis_arr)
         self.setup_multithreading()
         self.__calcneighbor__()
-        self.__threadlauncher__(self.__generation_worker__, False, threads=1)
+        self.__threadlauncher__(self.__generation_worker__, False)
 
     def setup_basis(self, basis_arr):
         if basis_arr is not None:
