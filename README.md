@@ -43,7 +43,7 @@ It is easiest to use VS code to set the computation kernel to the miniconda pyth
 
 Follow the Unix instructions from §([Setting up the enviroment](https://github.com/ramenspazz/Ising_Model_python#setting-up-the-enviroment)), but make sure you are in your home folder before starting by running the command : ```cd /home/<your user name here>```. WSL for some reason doesnt set the default directory to your home folder in some test cases I have looked into.
 
-If you use WSL, you must select autosave plots and do not autoplot, as WSL by default doesnt have X11 fowarding.
+If you use WSL, you must run the script file and then select autosave plots and do not autoplot when prompted, as WSL by default doesnt have X11 fowarding by default.
 
 # Instructions if you want to use native Windows
 - Download the Windows Miniconda version that fits your system (32 or 64 bit): https://docs.conda.io/en/latest/miniconda.html
