@@ -55,7 +55,7 @@ def ArrayHash(input_arr: ndarray) -> bytes:
             - byte hash of array using the numpy function `tobytes`.
     """
     try:
-        return(input_arr.tobytes())
+        return(hash(input_arr.tobytes()))
     except Exception:
         PE.PrintException()
 
