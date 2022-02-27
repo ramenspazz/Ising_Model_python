@@ -8,6 +8,7 @@ to operate on the lattice
 import math
 from typing import Optional, Union
 from numbers import Number
+from matplotlib.pyplot import scatter
 from numpy import integer as Int, floating as Float, ndarray, number
 from numpy.typing import NDArray
 # import numpy.typing as npt
@@ -15,14 +16,10 @@ from numpy.typing import NDArray
 import sys # noqa
 import numpy as np
 from numpy import array
-from pylab import *
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.animation as ani  # noqa
-from matplotlib import cm # noqa E402
+from SupportingFunctions import GetIndex
 import LinkedLattice as lc
 import DataAnalysis as DA
 import random
@@ -32,7 +29,6 @@ import time
 import InputFuncs as inF
 
 GNum = Union[number, Number]
-mpl.rcParams['backend'] = 'macosx'
 k_boltzmann = 1.380649E-23
 
 
@@ -164,7 +160,7 @@ class LatticeDriver:
         # $E/J = -\sum_{<i,j>} \sigma_i\sigma_j$
         return(self.internal_arr.Nearest_Neighbor())
 
-    def display(self) -> None:
+    def update(self, animate = False) -> None:
         """
             Purpose
             -------
@@ -172,22 +168,23 @@ class LatticeDriver:
             spin states of the lattice nodes.
         """
         try:
-            W = list()
             for i in range(self.Lshape[0]):
                 for j in range(self.Lshape[1]):
                     cur = self[i, j]
                     if self.first_run is True:
                         self.lat_spins.get('x').append(cur.get_coords()[0])
                         self.lat_spins.get('y').append(cur.get_coords()[1])
-                    self.lat_spins.get('spin').append(cur.get_spin())
+                        self.lat_spins.get('spin').append(cur.get_spin())
+                    else:
+                        self.lat_spins.get('spin')[i+j] = cur.get_spin()
             self.first_run = False
-            fig = px.scatter(self.lat_spins, x='x', y='y', color='spin')
-            fig.show()
         except Exception:
             PE.PrintException()
 
-    def update_display(self):
-        pass
+    def plot(self):
+        self.update()
+        fig = px.scatter(self.lat_spins, x='x', y='y', color='spin')
+        fig.show()
 
     def get_spin_energy(self,
                         BJs: list | ndarray,
@@ -200,8 +197,6 @@ class LatticeDriver:
             Computes the energy of the lattice at thermal equlibrium and
             relates this to T=J/(Beta*J*k) = 1/(Beta*k) ~ 1/(Beta*J)
         """
-        pass
-
         inF.print_stdout(
             "get_spin_energy is 000.0% complete...\r")
         if np.array_equiv(self.ZERO_mtx.shape,
@@ -390,33 +385,26 @@ class LatticeDriver:
             The Standard deviation of the mean is {
                 stdev / np.sqrt(num_nodes) :.4f}\n
             """)
-        fig, axes = plt.subplots(
-            1, 2, figsize=(12, 4),
-            num=f"""Evolution of Average Spin n={
-                num_nodes**2} and Energy for BJ={
-                BJ}""")
-        ax = axes[0]
-        ax.plot(SE_mtx[:, 0] / num_nodes)
-        ax.set_xlabel('Time Steps')
-        ax.set_ylabel(r'Average Spin $\bar{m}$')
-        ax.grid()
-        ax.autoscale()
-        ax = axes[1]
-        ax.plot(SE_mtx[:, 1])
-        ax.set_xlabel('Time Steps')
-        ax.set_ylabel(r'Energy $E/J$')
-        ax.grid()
-        ax.autoscale()
-        fig.tight_layout()
+        fig = make_subplots(rows=1, cols=2)
+        fig.layout.title = (f'Evolution of Average Spin n={num_nodes} and'
+                            f' Energy for BJ={BJ}')
+        fig.add_trace(go.Scatter(
+            x=np.linspace(0, len(SE_mtx[:, 0])-1,len(SE_mtx[:, 0])),
+            y=SE_mtx[:, 0] / num_nodes, mode='lines'), row=1, col=1)
+        fig.update_xaxes(title_text='Time Steps', row=1, col=1)
+        fig.update_yaxes(title_text='Average Spin', row=1, col=1)
+        fig.add_trace(go.Scatter(
+            x=np.linspace(0, len(SE_mtx[:, 1])-1,len(SE_mtx[:, 1])),
+            y=SE_mtx[:, 1], mode='lines'), row=1, col=2)
+        fig.update_xaxes(title_text='Time Steps', row=1, col=2)
+        fig.update_yaxes(title_text='E / J', row=1, col=2)
         if save is True:
             fname = ('Metropolis' + '_' + str(self.Lshape) + '_' +
                      str(self.internal_arr.rots) + '_' + str(BJ) +
                      str(times) + '.png')
-            plt.savefig(fname)
+            fig.write_image(fname)
         if auto_plot is True:
-            plt.draw()
-            plt.ion()
-            plt.pause(0.01)
+            fig.show()
 
     def randomize(self,
                   voids: bool,
@@ -457,6 +445,8 @@ class LatticeDriver:
                 raise ValueError("All nodes are voids! Please choose different"
                                  " values for your gaussian distribution, or"
                                  " you\'re just reaaaaaally unlucky.")
+            # setup internal display of lattice
+            self.update()
             return(None)
         except Exception:
             PE.PrintException()
