@@ -20,7 +20,7 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
-@njit(nopython=True)
+@njit
 def GetIndex(i: int, x_range: int) -> ndarray:
     """
         Returns
