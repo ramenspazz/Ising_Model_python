@@ -1,7 +1,7 @@
 """
 Author: Ramenspazz
 
-This file defines the Node class and the LinkedLattice class.
+This file defines the LinkedLattice class.
 """
 from __future__ import annotations
 # Typing imports
