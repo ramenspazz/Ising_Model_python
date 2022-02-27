@@ -51,7 +51,7 @@ Follow the Unix instructions from §([Setting up the enviroment](https://github.
 
 Download and install miniconda:
 - Navigate to https://docs.conda.io/en/latest/miniconda.html and select the correct version for your system.
-- From the installed anaconda powershell, run the command ```conda create -n <name here> python=3.10 matplotlib numpy scipy sympy astropy```.
+- From the installed anaconda powershell, run the command ```conda create -n <name here> python=3.10 numpy scipy sympy astropy plotly pandas dash```.
 - Activate the newly created python enviroment with ```conda activate <name here>```.
 - Run the file main.py like so: ```<your path to the conda env> -O <the path to>\main.py```
 - Finally set your launcher with your program of choice to be the anaconda powershell launcher and you are done!
