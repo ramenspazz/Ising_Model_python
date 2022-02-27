@@ -5,11 +5,10 @@ Purpose: main driver file for ISING model simulation
 """
 # Begin by importing external libraries using path_setup
 # NOTE : Must be ran first, thus PEP8-E402
-import math
 import path_setup
 path_setup.path_setup()
+import math  # nowa E402
 import sys  # noqa E402
-import time  # noqa E402
 import matplotlib.pyplot as plt # noqa E402
 import numpy as np # noqa E402
 import datetime as dt # noqa E402
@@ -17,12 +16,12 @@ from LatticeClass_F import lattice_class as lt # noqa E402
 import PrintException as PE  # noqa E402
 import input_funcs as inF  # noqa E402
 from getpass import getpass  # noqa E402
-from random import random  # noqa E402
+from random import random as rng  # noqa E402
+import random as rnd  # noqa E402
 import Data_Analysis as DA  # noqa E402
 import warnings  # noqa E402
-import cProfile  # noqa E402
 warnings.filterwarnings("ignore", category=SyntaxWarning)
-sys.setrecursionlimit(1000000)  # increase recursion limit
+# sys.setrecursionlimit(1000000)  # increase recursion limit
 
 
 def rand_time() -> int:
@@ -31,10 +30,27 @@ def rand_time() -> int:
     return(int(dt.datetime.now().strftime('%s')))
 
 
+def generate_random(gen_num: int) -> list:
+    """
+        Generates 2 or 3 random numbers whos sum is 100
+    """
+    if gen_num == 2:
+        rand_a = rnd.randint(0, 100)
+        rand_b = 100 - rand_a
+        return([rand_a, rand_b])
+    elif gen_num == 3:
+        rand_a = rnd.randint(0, 98)
+        if rand_a == 0:
+            rand_b = rnd.randint(0, 99)
+        else:
+            rand_b = rnd.randint(0, 100-rand_a-1)
+        rand_c = 100 - rand_a - rand_b
+        return([rand_a, rand_b, rand_c])
+
 def main(*args, **kwargs) -> int:
     try:
-        N = 128
-        M = 128
+        N = 48
+        M = 48
         size = [N, M]
         total_time = math.trunc(np.sqrt(N*M))
         a = 0.1
@@ -44,9 +60,13 @@ def main(*args, **kwargs) -> int:
         BJs = np.arange(a, b, step)
         output = ''
 
-        lt_c4v = lt(1, size)
-        lt_c3v = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
-        lt_c6v = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
+        lt_c4v_up = lt(1, size)
+        lt_c3v_up = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
+        lt_c6v_up = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
+
+        lt_c4v_dn = lt(1, size)
+        lt_c3v_dn = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
+        lt_c6v_dn = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
 
         # print('lt_a connected')
         # for item in lt_a[1, 1]:
@@ -80,30 +100,45 @@ def main(*args, **kwargs) -> int:
                 # DOCtest seed = 1644121893
                 # good seed 1644144314
                 seed = 1644121893
-                lt_c4v.randomize(voids=True, probs=[15, 80, 5],
-                                 rand_seed=seed)
-                lt_c3v.randomize(voids=True, probs=[49, 49, 2],
-                                 rand_seed=seed)
-                lt_c6v.randomize(voids=True, probs=[80, 15, 5],
-                                 rand_seed=seed)
+                lt_c4v_up.randomize(voids=True, probs=[15, 80, 5],
+                                    rand_seed=seed)
+                lt_c3v_up.randomize(voids=True, probs=[15, 80, 5],
+                                    rand_seed=seed)
+                lt_c6v_up.randomize(voids=True, probs=[15, 80, 5],
+                                    rand_seed=seed)
+                lt_c4v_dn.randomize(voids=True, probs=[80, 15, 5],
+                                    rand_seed=seed)
+                lt_c3v_dn.randomize(voids=True, probs=[80, 15, 5],
+                                    rand_seed=seed)
+                lt_c6v_dn.randomize(voids=True, probs=[80, 15, 5],
+                                    rand_seed=seed)
 
             elif output == '1':
                 inF.print_stdout("option 1 chosen.", end='\n')
                 inF.print_stdout('Enable voids (y/n)?')
                 output = inF.key_input(['y', 'n'])
                 voids_enable = True if output == 'y' else False
+                rand_n = 2 if voids_enable is False else 3
+                seed = rand_time()
 
-                lt_c4v.randomize(voids=voids_enable, probs=[
-                    random(), random()],
-                    rand_seed=rand_time(), quiet=False)
-
-                lt_c3v.randomize(voids=voids_enable, probs=[
-                     random(), random()],
-                     rand_seed=rand_time(), quiet=False)
-
-                lt_c6v.randomize(voids=voids_enable, probs=[
-                     random(), random()],
-                     rand_seed=rand_time(), quiet=False)
+                lt_c4v_up.randomize(voids=voids_enable,
+                                    probs=generate_random(rand_n),
+                                    rand_seed=seed)
+                lt_c3v_up.randomize(voids=voids_enable,
+                                    probs=generate_random(rand_n),
+                                    rand_seed=seed)
+                lt_c6v_up.randomize(voids=voids_enable,
+                                    probs=generate_random(rand_n),
+                                    rand_seed=seed)
+                lt_c4v_dn.randomize(voids=voids_enable,
+                                    probs=generate_random(rand_n),
+                                    rand_seed=seed)
+                lt_c3v_dn.randomize(voids=voids_enable,
+                                    probs=generate_random(rand_n),
+                                    rand_seed=seed)
+                lt_c6v_dn.randomize(voids=voids_enable,
+                                    probs=generate_random(rand_n),
+                                    rand_seed=seed)
 
             elif output == 'q':
                 inF.cls()
@@ -111,9 +146,12 @@ def main(*args, **kwargs) -> int:
                 exit()
 
             if auto_plot is True:
-                lt_c4v.display()
-                lt_c3v.display()
-                lt_c6v.display()
+                lt_c4v_up.display()
+                lt_c3v_up.display()
+                lt_c6v_up.display()
+                lt_c4v_dn.display()
+                lt_c3v_dn.display()
+                lt_c6v_dn.display()
 
             inF.print_stdout(
                 f"BJ range= [{a},{b}]. Steps= {step}. Change (y/n)? ")
@@ -141,14 +179,23 @@ def main(*args, **kwargs) -> int:
             # lt_c.metropolis(total_time, BJ, progress=True,
             #                 save=auto_save, auto_plot=auto_plot)
 
-            lt_c4v.get_spin_energy(BJs, total_time, save=auto_save,
-                                   auto_plot=auto_plot)
+            lt_c4v_up.get_spin_energy(BJs, total_time, save=auto_save,
+                                      auto_plot=auto_plot)
 
-            lt_c3v.get_spin_energy(BJs, total_time, save=auto_save,
-                                   auto_plot=auto_plot)
+            lt_c3v_up.get_spin_energy(BJs, total_time, save=auto_save,
+                                      auto_plot=auto_plot)
 
-            lt_c6v.get_spin_energy(BJs, total_time, save=auto_save,
-                                   auto_plot=auto_plot)
+            lt_c6v_up.get_spin_energy(BJs, total_time, save=auto_save,
+                                      auto_plot=auto_plot)
+
+            lt_c4v_dn.get_spin_energy(BJs, total_time, save=auto_save,
+                                      auto_plot=auto_plot)
+
+            lt_c3v_dn.get_spin_energy(BJs, total_time, save=auto_save,
+                                      auto_plot=auto_plot)
+
+            lt_c6v_dn.get_spin_energy(BJs, total_time, save=auto_save,
+                                      auto_plot=auto_plot)
     except KeyboardInterrupt:
         inF.cls()
         inF.print_stdout("Keyboard Interrupt, closing...", end='\n')

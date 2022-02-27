@@ -8,7 +8,6 @@ Purpose: main driver file for ISING model simulation
 import path_setup
 path_setup.path_setup()
 import sys  # noqa E402
-import time  # noqa E402
 import matplotlib.pyplot as plt # noqa E402
 import numpy as np # noqa E402
 import datetime as dt # noqa E402

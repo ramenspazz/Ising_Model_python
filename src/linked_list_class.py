@@ -4,23 +4,27 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
-import math
 # Typing imports
 from typing import Optional, TypedDict, Union, Callable
 from numbers import Number
-# import matplotlib.pyplot as plt
+
+# Math related
 import numpy.typing as npt  # noqa
 from numpy.typing import NDArray
-from numpy import int64, int8, integer as Int, floating as Float, ndarray, number  # noqa E501
+from numpy import int8, integer as Int, floating as Float, ndarray, number  # noqa E501
+from Node import Node
+
 # Functions and Libraries
 from numba import njit
-import tkinter  # noqa : TODO use it later
+from Supporting_Functions import GetIndex, ArrayHash, DividendRemainder
+from Supporting_Functions import RoundNum
 import numpy as np
 import PrintException as PE
 from threading import RLock
 import multiprocessing
 import concurrent.futures as CF
 import input_funcs as inF
+
 # ignore warning on line 564
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -29,320 +33,6 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 GNum = Union[number, Number]
 MIN_INT = pow(-2, 31)
 MAX_INT = pow(2, 31) - 1
-
-
-@njit(nopython=True)
-def get_index(i: int, x_range: int) -> ndarray:
-    """
-        Returns
-        -------
-        index : `ndarray`[`int`]
-            - A 1D numpy ndarray with 2 entries listing a (x,y) pair given an
-            input integer `i` that maps to the 2D plane.
-    """
-    return(np.array(
-        [i % x_range,
-            int(i / x_range)]))
-
-
-def ArrayHash(input_arr: ndarray) -> bytes:
-    """
-        Pray IEEE 754 is not in the array.
-
-        Returns
-        -------
-        hash : `bytes`
-            - byte hash of array using the numpy function `tobytes`.
-    """
-    return(hash(input_arr.tobytes()))
-
-
-def Dividend_Remainder(n: int | Int,
-                       m: int | Int,
-                       t: int | Int) -> list[int | Int]:
-    """
-        Purpose
-        -------
-        Returns a list with the dividend and remainder of (nm)/t.
-        Runs in Theta(log(n)), Omega(n), O(nlog(n))
-
-        Returns
-        -------
-        Remainder : `int`
-            - Represents the remainder after division.
-
-        Dividend : `int`
-            - Represents a whole number p for n*m>=pt, where n, m, p, and t are
-            all integers.
-
-    """
-    t = int(t)
-    area = int(n * m)
-
-    # if not (MAX_INT > area > MIN_INT):
-    #     raise ValueError('Input n and m are too large!')
-    if t > area:
-        return([0, area])
-    elif t == area:
-        return([1, 0])
-
-    test = 0
-    div = 0
-    div_overflow = 0
-    OF_on = 0
-    prev = 0
-    while True:
-        test = math.trunc(t * div_overflow) + math.trunc(t << div)
-
-        if prev > area and test > area:
-            return([math.trunc((t << div) / t + div_overflow),
-                    area-t*np.floor(area / t)])
-
-        elif prev < area and test > area:
-            return([div,
-                    area-t*np.floor(area / t)])
-
-        if test == area:
-            return([math.trunc((t << div) / t + div_overflow),
-                    area-t*np.floor(area / t)])
-
-        elif test < area:
-            prev = test
-            div += 1
-            continue
-
-        elif prev < area and OF_on == 0:
-            div_overflow += math.trunc((t << (div - 1)) / t)
-            prev = test
-            OF_on = 1
-            div = 1
-            continue
-
-
-def round_num(input: Float,
-              figures: Int,
-              round_fig: Optional[Int] = None) -> Float:
-    """
-        Purpose
-        -------
-        Rounds a number to a given number of figures, and optionally equates a
-        number to zero if it is within the number of significant figures
-        passed.
-
-        Parameters
-        ----------
-        input : `float`
-            The input number to round.
-        figures : `int`
-            The number of significant figures to round the input to.
-        round_fig : Optional[`int`]
-            The number of sigificant figures representing how close absolute
-            value of the input must be to zero to round the number to
-            `int`(`0`).
-    """
-    if isinstance(input, ndarray) is True:
-        ret_val = np.zeros(input.shape)
-        for i in range(len(input)):
-            if round_fig is not None:
-                ret_val[i] = np.round(input[i], round_fig)
-            else:
-                ret_val[i] = np.round(input[i], figures)
-                if ret_val[i] is -0.0:  # intentional check for -0.0
-                    ret_val[i] = 0
-        return(ret_val)
-    else:
-        if np.abs(input) < 10**(-figures):
-            return(0)
-        else:
-            if round_fig is not None:
-                return(np.round(input, round_fig))
-            else:
-                return(np.round(input, figures))
-
-
-def array_isclose(A: ndarray | list,
-                  B: ndarray | list,
-                  round_fig: Optional[float] = 1E-09) -> bool:
-    try:
-        if np.array_equiv(A.shape, B.shape) is False:
-            raise ValueError('Shape of the two inputs must be equal!'
-                             f' Shapes are {A.shape} and {B.shape}.')
-        for A_val, B_val in zip(A, B):
-            if np.abs(A_val - B_val) <= round_fig:
-                continue
-            else:
-                return(False)
-        return(True)
-    except Exception:
-        PE.PrintException()
-
-
-class Node:
-    """
-        Overview
-        --------
-        This class defines an object that stores a x-y position as a list and a
-        refrence to its neighbors stored in a `list`. This is used by the
-        LinkedLattice class to store a linkedlist style lattice of Nodes. Spin
-        states are `-1` or `+1` with respect to the z axis spin 0 denotes an
-        empty node, start all nodes as empty.
-    """
-    def __init__(self,
-                 coords: NDArray[Float],
-                 combination: Optional[list | NDArray[Int]] = None,
-                 spin_state: Optional[int] = None) -> None:
-        """
-            Parameters
-            ----------
-            coords : `list[Float]` | `NDArray[Float]`
-                Array of x and y coordinate pair for the `Node`.
-            combination : Optional[`list` | `NDArray[Int]`]
-                An index of the basis combination of the `Node`.
-            spin_state : Optional[`int`]
-                An `int` of `-1`, `0`, or `1` representing the spin
-                state or if the `Node` is a void
-        """
-        try:
-            if spin_state is None or spin_state == 0:
-                self.spin_state = 0
-            elif spin_state == 1 or -1:
-                self.spin_state = spin_state
-            else:
-                raise ValueError(
-                    f"""Optional parameter spin_state must be 1, 0, -1 or None!
-                        Got ({spin_state}, type={type(spin_state)})
-                        """)
-            if combination is not None:
-                self.combination: NDArray[Int] = np.array(combination, int64)
-            elif combination is None:
-                self.combination: NDArray[Int] = None
-            self.coords: NDArray[Float] = np.array(coords)
-            self.links = list()
-        except Exception:
-            PE.PrintException()
-
-    def __len__(self):
-        return(len(self.links))
-
-    def __iter__(self) -> Node:
-        try:
-            for link in self.links:
-                yield(link)
-        except Exception:
-            PE.PrintException()
-
-    def __setitem__(self, __value: int) -> None:
-        self.spin_state = __value
-
-    def __rmul__(self, LHS: int | Node) -> int:
-        """
-            Overview
-            --------
-            Multiplication operator overload for nodes.
-
-            Parameters
-            ----------
-            RHS : `int` | `Node`
-                Right hand side for multiplication.
-        """
-        if isinstance(LHS, Node) is True:
-            return(self.spin_state * LHS.spin_state)
-        else:
-            return(self.spin_state * LHS)
-
-    def __mul__(self, RHS: int | Node) -> int:
-        """
-            Overview
-            --------
-            Multiplication operator overload for nodes.
-
-            Parameters
-            ----------
-            RHS : `int` | `Node`
-                Right hand side for multiplication.
-        """
-        if isinstance(RHS, Node) is True:
-            return(self.spin_state * RHS.spin_state)
-        else:
-            return(self.spin_state * RHS)
-
-    def add_link(self, new_links: Node) -> None:
-        """
-            Adds a link to a Node. The links can either be a `list[Node]` or a
-            single `Node`.
-        """
-        try:
-            if isinstance(new_links, Node) is True:
-                self.links.append(new_links)
-            elif isinstance(new_links, list) is True:
-                for item in new_links:
-                    self.links.append(item)
-            else:
-                raise ValueError("Incorrent type for new_links!"
-                                 " Expected type Node or list[Node] but got "
-                                 f"{type(new_links)}!")
-        except Exception:
-            PE.PrintException()
-
-    def get_coords(self) -> ndarray | str:
-        return(self.coords)
-
-    def get_coords_and_spin(self) -> ndarray:
-        return(np.array([*self.coords, self.get_spin()]))
-
-    def get_index(self) -> ndarray | str:
-        """
-            Parameters
-            ----------
-            ReturnString : Optional[`bool`]
-                Flag to trigger returning a `str` instead of a `NDArray[int]`
-                representing the basis combination of this nodes coordinates.
-            Returns
-            -------
-                combination : `NDArray[int]` | `str`
-                    The basis combination of this nodes coordinates.
-        """
-        return(self.combination)
-
-    def get_spin(self) -> int:
-        """
-            Returns
-            -------
-            An integer representation of the spinstate as `-1` or `1`. Can
-            return `0` to represent a lattice void.
-        """
-        return(self.spin_state)
-
-    def set_spin(self, spin) -> None:
-        self.spin_state = spin
-
-    def flip_spin(self):
-        """
-            Purpose
-            -------
-            Flips the spin of the node if it is `1` or `-1`. If the spin is `0`
-            then do nothing.
-        """
-        try:
-            if self.get_spin() == 0:
-                return
-            elif self.get_spin() == 1:
-                self.spin_state = -1
-                return
-            elif self.get_spin() == -1:
-                self.spin_state = 1
-                return
-        except Exception:
-            PE.PrintException()
-
-    def flip_test(self) -> int:
-        try:
-            if self.get_spin() != 0:
-                return(-1 if self.get_spin() == 1 else -1)
-            else:
-                return(0)
-        except Exception:
-            PE.PrintException()
 
 
 class CoordinateDict(TypedDict):
@@ -435,7 +125,7 @@ class LinkedLattice:
         x = self.__shape[0]
         y = self.__shape[1]
         if self.tc != 1:
-            DivRem = Dividend_Remainder(x, y, self.tc)
+            DivRem = DividendRemainder(x, y, self.tc)
         if self.tc == 1:
             self.bounds.append([0, x*y-1])
         elif not ((DivRem[0] == 0) or (DivRem[0] == 1)):
@@ -466,7 +156,7 @@ class LinkedLattice:
     def range(self, start: int, stop: int, step: Optional[int] = None) -> Node:
         try:
             for i in range(start, stop):
-                yield self[get_index(i, self.__shape[0])]
+                yield self[GetIndex(i, self.__shape[0])]
         except Exception:
             PE.PrintException()
 
@@ -537,7 +227,7 @@ class LinkedLattice:
             if self.origin_node is None:
                 raise ValueError("Iterator : origin node is None!")
             for i in range(self.num_nodes):
-                yield(self[get_index(i, self.__shape[0])])
+                yield(self[GetIndex(i, self.__shape[0])])
         except Exception:
             PE.PrintException()
 
@@ -546,7 +236,7 @@ class LinkedLattice:
             if self.origin_node is None:
                 raise ValueError("Iterator : origin node is None!")
             for i in range(self.num_nodes):
-                yield(self[get_index(i, self.__shape[0])])
+                yield(self[GetIndex(i, self.__shape[0])])
         except Exception:
             PE.PrintException()
 
@@ -599,7 +289,7 @@ class LinkedLattice:
                 if __NodeIndex > self.num_nodes - 1:
                     raise IndexError(f'Index {__NodeIndex} is out of bounds'
                                      f' for max index of {self.num_nodes-1:}!')
-                return(self[get_index(__NodeIndex)])
+                return(self[GetIndex(__NodeIndex)])
             else:
                 lookup = np.array(__NodeIndex) if (type(__NodeIndex) == tuple or type(__NodeIndex) == list) else __NodeIndex  # noqa E501 lazy
                 return(self.node_dict.get(ArrayHash(lookup)))
@@ -720,7 +410,7 @@ class LinkedLattice:
         """
         try:
             for nbr in self.nbrs_list:
-                coord = round_num(node.get_coords() + nbr[0], 10)
+                coord = RoundNum(node.get_coords() + nbr[0], 10)
                 index = node.get_index() + nbr[1]
                 x_in_bounds = ((index[0] >= 0) and
                                (index[0] < self.__shape[0]))
@@ -752,15 +442,15 @@ class LinkedLattice:
             lower_B = bounds[0]
             upper_B = bounds[1]
             for i in range(lower_B, upper_B):
-                index = get_index(i, self.__shape[0])
-                coord = round_num(index.dot(self.basis_arr), 10)
+                index = GetIndex(i, self.__shape[0])
+                coord = RoundNum(index.dot(self.basis_arr), 10)
                 node = self[index]
                 if node is None:
                     node = Node(coord, index)
                     self.append(node)
                 # generate the neighbors for the node
                 for nbr in self.nbrs_list:
-                    coord = round_num(node.get_coords() + nbr[0], 10)
+                    coord = RoundNum(node.get_coords() + nbr[0], 10)
                     index = node.get_index() + nbr[1]
                     x_in_bounds = ((index[0] >= 0) and
                                    (index[0] < self.__shape[0]))

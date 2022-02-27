@@ -16,9 +16,8 @@ import sys # noqa
 import numpy as np
 from numpy import array
 import matplotlib.pyplot as plt
+import matplotlib.animation as ani
 from matplotlib import cm # noqa E402
-from scipy import rand # noqa E402
-from scipy.ndimage import convolve, generate_binary_structure # noqa
 import linked_list_class as lc
 import Data_Analysis as DA
 import random
@@ -173,7 +172,9 @@ class lattice_class:
                        label='Yellow=+1, Purple=-1, Teal=Void')
             ax.legend()
             ax.autoscale()
-            fig.show()
+            plt.draw()
+            plt.ion()
+            plt.pause(0.01)
         except Exception:
             PE.PrintException()
 
@@ -188,6 +189,8 @@ class lattice_class:
             Computes the energy of the lattice at thermal equlibrium and
             relates this to T=J/(Beta*J*k) = 1/(Beta*k) ~ 1/(Beta*J)
         """
+        pass
+
         inF.print_stdout(
             "get_spin_energy is 000.0% complete...\r")
         if np.array_equiv(self.ZERO_mtx.shape,
@@ -241,7 +244,9 @@ class lattice_class:
                      str(bjs[len(bjs)-1]) + str(times) + '.png')
             plt.savefig(fname)
         if auto_plot is True:
-            fig.show()
+            plt.draw()
+            plt.ion()
+            plt.pause(0.01)
 
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
@@ -394,7 +399,9 @@ class lattice_class:
                      str(times) + '.png')
             plt.savefig(fname)
         if auto_plot is True:
-            fig.show()
+            plt.draw()
+            plt.ion()
+            plt.pause(0.01)
 
     def randomize(self,
                   voids: bool,
