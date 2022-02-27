@@ -54,6 +54,9 @@ class lattice_class:
                 on the first row and the y basis on the second row.
         '''
         try:
+            self.U: list = []
+            self.V: list = []
+            self.first_run = True
             self.Lshape = np.array([
                 np.int64(Lshape[0]),
                 np.int64(Lshape[1])
@@ -158,23 +161,21 @@ class lattice_class:
             spin states of the lattice nodes.
         """
         try:
-            U = list()
-            V = list()
             W = list()
             for i in range(self.Lshape[0]):
                 for j in range(self.Lshape[1]):
                     cur = self[i, j]
-                    U.append(cur.get_coords()[0])
-                    V.append(cur.get_coords()[1])
+                    if self.first_run is True:
+                        self.U.append(cur.get_coords()[0])
+                        self.V.append(cur.get_coords()[1])
                     W.append(cur.get_spin())
-            fig, ax = plt.subplots(1, 1)
-            ax.scatter(U, V, c=W, cmap='viridis',
-                       label='Yellow=+1, Purple=-1, Teal=Void')
-            ax.legend()
-            ax.autoscale()
-            plt.draw()
+            self.first_run = False
+            self.scatter_plt = plt.scatter(self.U, self.V, c=W, cmap='viridis',
+                                          label='Yellow=+1, Purple=-1, Teal=Void')
+            self.ax.legend()
+            self.ax.autoscale()
+            self.fi
             plt.ion()
-            plt.pause(0.01)
         except Exception:
             PE.PrintException()
 
