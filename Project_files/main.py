@@ -12,7 +12,7 @@ import sys  # noqa E402
 import matplotlib.pyplot as plt # noqa E402
 import numpy as np # noqa E402
 import datetime as dt # noqa E402
-from LatticeDriver import lattice_class as lt # noqa E402
+from LatticeDriver import LatticeDriver as lt # noqa E402
 import PrintException as PE  # noqa E402
 import InputFuncs as inF  # noqa E402
 from getpass import getpass  # noqa E402
@@ -50,8 +50,8 @@ def generate_random(gen_num: int) -> list:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 48
-        M = 48
+        N = 96
+        M = 96
         size = [N, M]
         total_time = math.trunc(np.sqrt(N*M))
         a = 0.1

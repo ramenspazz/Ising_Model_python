@@ -59,7 +59,7 @@ class Node:
         except Exception:
             PE.PrintException()
 
-    @njit(nopython=True)
+    @njit
     def __len__(self):
         return(len(self.links))
 

@@ -15,6 +15,11 @@ from numpy.typing import NDArray
 import sys # noqa
 import numpy as np
 from numpy import array
+from pylab import *
+import plotly.express as px
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani  # noqa
 from matplotlib import cm # noqa E402
@@ -27,9 +32,12 @@ import time
 import InputFuncs as inF
 
 GNum = Union[number, Number]
+mpl.rcParams['backend'] = 'macosx'
+k_boltzmann = 1.380649E-23
 
 
-class lattice_class:
+class LatticeDriver:
+
     """
         TODO : write docstring
     """
@@ -54,8 +62,11 @@ class lattice_class:
                 on the first row and the y basis on the second row.
         '''
         try:
-            self.U: list = []
-            self.V: list = []
+            self.lat_spins = {
+                'x': [],
+                'y': [],
+                'spin': []}
+            self.FigPlt = go.FigureWidget()
             self.first_run = True
             self.Lshape = np.array([
                 np.int64(Lshape[0]),
@@ -166,18 +177,17 @@ class lattice_class:
                 for j in range(self.Lshape[1]):
                     cur = self[i, j]
                     if self.first_run is True:
-                        self.U.append(cur.get_coords()[0])
-                        self.V.append(cur.get_coords()[1])
-                    W.append(cur.get_spin())
+                        self.lat_spins.get('x').append(cur.get_coords()[0])
+                        self.lat_spins.get('y').append(cur.get_coords()[1])
+                    self.lat_spins.get('spin').append(cur.get_spin())
             self.first_run = False
-            self.scatter_plt = plt.scatter(self.U, self.V, c=W, cmap='viridis',
-                                          label='Yellow=+1, Purple=-1, Teal=Void')
-            self.ax.legend()
-            self.ax.autoscale()
-            self.fi
-            plt.ion()
+            fig = px.scatter(self.lat_spins, x='x', y='y', color='spin')
+            fig.show()
         except Exception:
             PE.PrintException()
+
+    def update_display(self):
+        pass
 
     def get_spin_energy(self,
                         BJs: list | ndarray,
@@ -232,22 +242,26 @@ class lattice_class:
                          save: Optional[bool] = False,
                          auto_plot: Optional[bool] = True,
                          times: Optional[int] = None) -> None:
-
-        fig, (ax1, ax2) = plt.subplots(1, 2)
-        ax1.plot(1/bjs, ms, '-', label=r"<m> vs $\left(\frac{k}{J}\right)T$")
-        ax1.legend()
-        ax2.plot(1/bjs, E_stds*bjs, '-',
-                 label=r"$C_V / k^2$ vs $\left(\frac{k}{J}\right)T$'")
-        ax2.legend()
+        fig = make_subplots(rows=1, cols=2)
+        fig.layout.title = (f'Spin energy realtions plot,'
+                            f' C{self.internal_arr.rots}V')
+        xname = 'Scaled Temperature'
+        yname1 = 'Average Spin'
+        yname2 = 'Heat Capacity on Boltzmann constant squared'
+        fig.add_trace(go.Scatter(x=1/bjs, y=ms, mode='lines'), row=1, col=1)
+        fig.update_xaxes(title_text=xname, row=1, col=1)
+        fig.update_yaxes(title_text=yname1, row=1, col=1)
+        fig.add_trace(go.Scatter(x=1/bjs, y=E_stds*bjs, mode='lines'), row=1,
+                      col=2)
+        fig.update_xaxes(title_text=xname, row=1, col=2)
+        fig.update_yaxes(title_text=yname2, row=1, col=2)
         if save is True:
             fname = ('SpinEnergy' + str(self.Lshape) + '_' +
                      str(self.internal_arr.rots) + '_' + str(bjs[0]) + '-' +
                      str(bjs[len(bjs)-1]) + str(times) + '.png')
-            plt.savefig(fname)
+            fig.write_image(fname)
         if auto_plot is True:
-            plt.draw()
-            plt.ion()
-            plt.pause(0.01)
+            fig.show()
 
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
