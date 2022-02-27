@@ -7,18 +7,18 @@ Purpose: main driver file for ISING model simulation
 # NOTE : Must be ran first, thus PEP8-E402
 import path_setup
 path_setup.path_setup()
-import math  # nowa E402
+import math  # noqa E402
 import sys  # noqa E402
 import matplotlib.pyplot as plt # noqa E402
 import numpy as np # noqa E402
 import datetime as dt # noqa E402
-from LatticeClass_F import lattice_class as lt # noqa E402
+from LatticeDriver import lattice_class as lt # noqa E402
 import PrintException as PE  # noqa E402
-import input_funcs as inF  # noqa E402
+import InputFuncs as inF  # noqa E402
 from getpass import getpass  # noqa E402
 from random import random as rng  # noqa E402
 import random as rnd  # noqa E402
-import Data_Analysis as DA  # noqa E402
+import DataAnalysis as DA  # noqa E402
 import warnings  # noqa E402
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 # sys.setrecursionlimit(1000000)  # increase recursion limit
@@ -46,6 +46,7 @@ def generate_random(gen_num: int) -> list:
             rand_b = rnd.randint(0, 100-rand_a-1)
         rand_c = 100 - rand_a - rand_b
         return([rand_a, rand_b, rand_c])
+
 
 def main(*args, **kwargs) -> int:
     try:
