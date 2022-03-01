@@ -196,6 +196,7 @@ class LinkedLattice:
                        bounds: list | ndarray,
                        results_queue: mltp.Queue,
                        start_queue: queue.MyQueue,
+                       finish_queue: queue.MyQueue,
                        start_itt,
                        wait_until_set,
                        finished: mltp) -> int | Int:
@@ -212,16 +213,18 @@ class LinkedLattice:
         """
         lower_B = bounds[0]
         upper_B = bounds[1]
+        added_to_queue = False
         while not finished.is_set():
-            start_queue.put_nowait(1)
-            start_itt.wait(timeout=0.1)
+            if added_to_queue is False:
+                start_queue.put_nowait(1)
+                added_to_queue = True
+            start_itt.wait()
             psum: np.int64 = 0
             for node in self.range(lower_B, upper_B):
                 psum += node.spin_state
             results_queue.put_nowait(psum)
-            # threads hang here occasionally without the timeout option set
-            # but I dont know why. Hackdash fix for now but it works
-            wait_until_set.wait(timeout=0.1)
+            wait_until_set.wait(timeout=1)
+            added_to_queue = False
         return
 
     def __NN_Worker__(self, bounds: list) -> int | Int:

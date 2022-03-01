@@ -55,8 +55,8 @@ def main(*args, **kwargs) -> int:
         size = [N, M]
         total_time = 1000
         a = 0.1
-        b = 10
-        num_points = 10
+        b = 10+a
+        num_points = 100
         step = (b-a)/num_points
         BJs = np.arange(a, b, step)
         output = ''

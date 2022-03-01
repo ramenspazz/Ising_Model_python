@@ -6,6 +6,7 @@ to operate on the lattice
 '''
 # Typing imports
 from queue import Empty
+from tracemalloc import start
 from typing import Optional, Union
 from numbers import Number
 from numpy import integer as Int, floating as Float, ndarray, number
@@ -213,8 +214,9 @@ class LatticeDriver:
 
             # multithreading object declarations
             qsize = self.internal_arr.tc
-            res = queue.MyQueue()
-            start_queue = queue.MyQueue()
+            res = queue.MyQueue(qsize)
+            start_queue = queue.MyQueue(qsize)
+            finish_queue = queue.MyQueue(qsize)
             start_itt = mltp.Event()
             wait_until_set = mltp.Event()
             finished = mltp.Event()
@@ -226,6 +228,7 @@ class LatticeDriver:
                     args=(self.internal_arr.bounds[itt_num],
                           res,
                           start_queue,
+                          finish_queue,
                           start_itt,
                           wait_until_set,
                           finished)))
@@ -245,7 +248,7 @@ class LatticeDriver:
             for i, bj in enumerate(BJs):
                 inF.print_stdout(
                     f"get_spin_energy is {100 * i / len(BJs) :.1f}%"
-                    f"complete...")
+                    f" complete...")
                 energy = self.internal_arr.__threadlauncher__(
                     self.internal_arr.__NN_Worker__, True)
 
@@ -292,10 +295,13 @@ class LatticeDriver:
 
                     # begin calculating total spin of lattice
                     wait_until_set.clear()
-                    while start_queue.qsize() != qsize:
-                        sleep(0.00001)
-                        pass
+                    wait_until_set.set()
+                    wait_until_set.clear()
 
+                    while start_queue.qsize() != qsize:
+                        # print(start_queue.qsize())
+                        # sleep(0.1)
+                        pass
                     try:
                         for j in range(qsize):
                             # empty the start queue, yeah I wish there was a
@@ -305,12 +311,12 @@ class LatticeDriver:
                             start_queue.get()
                     except Empty:
                         pass
-
+                    
                     start_itt.set()
 
                     while res.qsize() != qsize:
                         # wait for results to populate the results queue
-                        sleep(0.00001)
+                        # sleep(0.00001)
                         pass
 
                     try:
@@ -326,7 +332,11 @@ class LatticeDriver:
 
                     # reset event variables
                     start_itt.clear()
-                    # sleep(0.001)
+                    start_itt.set()
+                    start_itt.clear()
+                    wait_until_set.set()
+                    sleep(0.0001)
+                    wait_until_set.clear()
                     wait_until_set.set()
 
                 # for time in range(times):
@@ -339,6 +349,7 @@ class LatticeDriver:
                 E_stds[i] = energies[-times:].std()
 
             finished.set()
+            start_itt.set()
             wait_until_set.set()
 
             for t in thread_pool:
