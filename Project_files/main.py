@@ -50,12 +50,14 @@ def generate_random(gen_num: int) -> list:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 96
-        M = 96
+        N = 32
+        M = 32
         size = [N, M]
-        total_time = math.trunc(np.sqrt(N*M))
+        total_time = int(4*math.trunc(np.sqrt(N*M)) /
+                     math.ceil(0.01*N*M))
+        print(total_time)
         a = 0.1
-        b = 10
+        b = 10+a
         num_points = 100
         step = (b-a)/num_points
         BJs = np.arange(a, b, step)
@@ -147,12 +149,12 @@ def main(*args, **kwargs) -> int:
                 exit()
 
             if auto_plot is True:
-                lt_c4v_up.display()
-                lt_c3v_up.display()
-                lt_c6v_up.display()
-                lt_c4v_dn.display()
-                lt_c3v_dn.display()
-                lt_c6v_dn.display()
+                lt_c4v_up.plot()
+                lt_c3v_up.plot()
+                lt_c6v_up.plot()
+                lt_c4v_dn.plot()
+                lt_c3v_dn.plot()
+                lt_c6v_dn.plot()
 
             inF.print_stdout(
                 f"BJ range= [{a},{b}]. Steps= {step}. Change (y/n)? ")

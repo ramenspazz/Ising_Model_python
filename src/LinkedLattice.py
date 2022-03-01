@@ -4,6 +4,7 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
+from time import sleep
 # Typing imports
 from typing import Optional, TypedDict, Union, Callable
 from numbers import Number
@@ -19,10 +20,11 @@ from SupportingFunctions import GetIndex, ArrayHash, DividendRemainder
 from SupportingFunctions import RoundNum
 import numpy as np
 import PrintException as PE
-from threading import RLock
-import multiprocessing
-import concurrent.futures as CF
 import InputFuncs as inF
+import concurrent.futures as CF
+import multiprocessing as mltp
+from threading import RLock
+import MLTPQueue as queue
 
 # ignore warning on line 564
 import warnings
@@ -81,13 +83,13 @@ class LinkedLattice:
         self.basis_arr = basis_arr
         self.bounds: list = []
         if threads is None:
-            self.tc = multiprocessing.cpu_count()  # threadcount
+            self.tc = mltp.cpu_count()  # threadcount
         else:
             self.tc = threads
         self.setup_basis(basis_arr)
         self.setup_multithreading()
         self.__calcneighbor__()
-        self.__threadlauncher__(self.__generation_worker__, False)
+        self.__threadlauncher__(self.__generation_worker__, False, threads=1)
 
     def setup_basis(self, basis_arr):
         if basis_arr is not None:
@@ -190,10 +192,16 @@ class LinkedLattice:
         else:
             return
 
-    def __Sum_Worker__(self, bounds: list | ndarray) -> int | Int:
+    def __Sum_Worker__(self,
+                       bounds: list | ndarray,
+                       results_queue: mltp.Queue,
+                       start_queue: queue.MyQueue,
+                       start_itt,
+                       wait_until_set,
+                       finished: mltp) -> int | Int:
         """
             Parameters
-            ---------
+            ----------
             bounds : `list` | `ndarray` -> ArrayLike
                 - Bounds for worker summation.
 
@@ -202,24 +210,30 @@ class LinkedLattice:
             spin_sum : `int` | `numpy.integer`
                 - This threads final parital sum to return.
         """
-        # Begin by creating a visit list for keeping track of nodes we still
-        # need to visit and a visited list that will keep track of what has
-        # already been visited.
-        sum: np.int64 = 0
         lower_B = bounds[0]
         upper_B = bounds[1]
-        for node in self.range(lower_B, upper_B):
-            sum += node.get_spin()
-        return(sum)
+        added_to_queue = False
+        while not finished.is_set():
+            if added_to_queue is False:
+                start_queue.put_nowait(1)
+                added_to_queue = True
+            start_itt.wait()
+            psum: np.int64 = 0
+            for node in self.range(lower_B, upper_B):
+                psum += node.spin_state
+            results_queue.put_nowait(psum)
+            wait_until_set.wait(timeout=1)
+            added_to_queue = False
+        return
 
     def __NN_Worker__(self, bounds: list) -> int | Int:
-        sum: np.int64 = 0
+        psum: np.int64 = 0
         lower_B = bounds[0]
         upper_B = bounds[1]
         for node in self.range(lower_B, upper_B):
             for nbr in node:
-                sum += nbr.get_spin()
-        return(sum)
+                psum += nbr.get_spin()
+        return(psum)
 
     def __iter__(self):
         try:

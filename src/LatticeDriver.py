@@ -5,10 +5,10 @@ This file defines the simulation lattice to be used and sets up basic methods
 to operate on the lattice
 '''
 # Typing imports
-import math
+from queue import Empty
+from tracemalloc import start
 from typing import Optional, Union
 from numbers import Number
-from matplotlib.pyplot import scatter
 from numpy import integer as Int, floating as Float, ndarray, number
 from numpy.typing import NDArray
 # import numpy.typing as npt
@@ -19,7 +19,6 @@ from numpy import array
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from SupportingFunctions import GetIndex
 import LinkedLattice as lc
 import DataAnalysis as DA
 import random
@@ -27,6 +26,12 @@ from random import randint
 import PrintException as PE
 import time
 import InputFuncs as inF
+import math
+import multiprocessing as mltp
+import MLTPQueue as queue
+from time import sleep
+import DataAnalysis as DA
+
 
 GNum = Union[number, Number]
 k_boltzmann = 1.380649E-23
@@ -160,7 +165,7 @@ class LatticeDriver:
         # $E/J = -\sum_{<i,j>} \sigma_i\sigma_j$
         return(self.internal_arr.Nearest_Neighbor())
 
-    def update(self, animate = False) -> None:
+    def update(self) -> None:
         """
             Purpose
             -------
@@ -197,39 +202,176 @@ class LatticeDriver:
             Computes the energy of the lattice at thermal equlibrium and
             relates this to T=J/(Beta*J*k) = 1/(Beta*k) ~ 1/(Beta*J)
         """
-        inF.print_stdout(
-            "get_spin_energy is 000.0% complete...\r")
-        if np.array_equiv(self.ZERO_mtx.shape,
-                          np.array([__times, 2])) is False:
-            self.set_time(__times)
-        SE_mtx = self.ZERO_mtx
-        mean_spin = np.zeros(len(BJs))
-        E_means = np.zeros(len(BJs))
-        E_stds = np.zeros(len(BJs))
-        start = time.time()
-        if __times is None:
-            times = 1
-        else:
-            times = __times
-        for i, bj in enumerate(BJs):
+        try:
             inF.print_stdout(
-                f"get_spin_energy is {100 * i / len(BJs) :.1f}% complete...")
+                "get_spin_energy is 000.0% complete...\r")
+            if np.array_equiv(self.ZERO_mtx.shape,
+                              np.array([__times, 2])) is False:
+                self.set_time(__times)
+            netSE_mtx = self.ZERO_mtx
+            mean_spin = np.zeros(len(BJs))
+            E_means = np.zeros(len(BJs))
+            E_stds = np.zeros(len(BJs))
 
-            SE_mtx = self.metropolis(times, bj, save=False, auto_plot=False,
-                                     quiet=True)
-            spins = SE_mtx[:, 0]
-            energies = SE_mtx[:, 1]
+            # multithreading object declarations
+            qsize = self.internal_arr.tc
+            res = queue.MyQueue(qsize)
+            start_queue = queue.MyQueue(qsize)
+            start_itt = mltp.Event()
+            wait_until_set = mltp.Event()
+            finished = mltp.Event()
 
-            mean_spin[i] = spins[-times:].mean()/len(self.internal_arr)
-            E_means[i] = energies[-times:].mean()
-            E_stds[i] = energies[-times:].std()
-        end = time.time()
-        inF.print_stdout(
-            f"get_spin_energy is 100% complete in {end-start:.8f} seconds!",
-            end='\n')
-        self.plot_spin_energy(BJs, mean_spin, E_stds, save=save,
-                              auto_plot=auto_plot, times=times)
-        return([mean_spin, E_means, E_stds])
+            thread_pool: list[mltp.Process] = []
+            for itt_num in range(self.internal_arr.tc):
+                thread_pool.append(mltp.Process(
+                    target=self.internal_arr.__Sum_Worker__,
+                    args=(self.internal_arr.bounds[itt_num],
+                          res,
+                          start_queue,
+                          start_itt,
+                          wait_until_set,
+                          finished)))
+                thread_pool[itt_num].start()
+            prev_sum = 0
+            rand_xy = []
+            flip_num = math.ceil(4 * np.log2(len(self.internal_arr)))
+
+            if __times is None:
+                times = 1
+            else:
+                times = __times
+            if self.time != times:
+                self.set_time(times)
+
+            start_time = time.time()
+            for i, bj in enumerate(BJs):
+                inF.print_stdout(
+                    f"get_spin_energy is {100 * i / len(BJs) :.1f}%"
+                    f" complete...")
+                energy = self.internal_arr.__threadlauncher__(
+                    self.internal_arr.__NN_Worker__, True)
+
+                prev_energy = energy
+
+                netSE_mtx = self.ZERO_mtx
+                for itt_num in range(times):
+                    rand_xy.clear()
+
+                    # select spins to flip
+                    for nth_flip in range(flip_num):
+                        # pick random point on array and flip spin
+                        test = [randint(0, self.Lshape[0] - 1),
+                                randint(0, self.Lshape[1] - 1)]
+                        if self[test].get_spin() == 0 or self[test] in rand_xy:
+                            continue
+                        else:
+                            rand_xy.append(self[test])
+                    dE_tot = 0
+                    for node_i in rand_xy:
+                        if node_i.get_spin() == 0:
+                            netSE_mtx[itt_num, 0] = prev_sum
+                            netSE_mtx[itt_num, 1] = prev_energy
+                            continue
+
+                        # compute change in energy
+                        E_i: np.int64 = 0
+                        E_f: np.int64 = 0
+                        for neighbor in node_i:
+                            if neighbor.get_spin() == 0:
+                                continue
+                            E_i += node_i.get_spin() * neighbor.get_spin()
+                            E_f += -1 * node_i.get_spin() * neighbor.get_spin()
+
+                        # change state with designated probabilities
+                        dE = E_f-E_i
+
+                        if (dE > 0) and (
+                           (randint(0, 100) / 100) < np.exp(-bj * dE)):
+                            node_i.flip_spin()
+                        elif dE <= 0:
+                            node_i.flip_spin()
+                        dE_tot += dE
+
+                    # begin calculating total spin of lattice
+                    wait_until_set.clear()
+                    wait_until_set.set()
+                    wait_until_set.clear()
+
+                    while start_queue.qsize() != qsize:
+                        # print(start_queue.qsize())
+                        # sleep(0.1)
+                        pass
+                    try:
+                        for j in range(qsize):
+                            # empty the start queue, yeah I wish there was a
+                            # better way to do this...
+                            # https://xkcd.com/292/
+                            # mutter mutter velociraptors...
+                            start_queue.get()
+                    except Empty:
+                        pass
+                    
+                    start_itt.set()
+
+                    while res.qsize() != qsize:
+                        # wait for results to populate the results queue
+                        # sleep(0.00001)
+                        pass
+
+                    try:
+                        for j in range(qsize):
+                            netSE_mtx[itt_num, 0] += res.get()
+                    except Empty:
+                        pass
+
+                    prev_sum = netSE_mtx[itt_num, 0]
+                    energy += dE_tot
+                    prev_energy = energy
+                    netSE_mtx[itt_num, 1] = energy
+
+                    # reset event variables
+                    start_itt.clear()
+                    start_itt.set()
+                    start_itt.clear()
+                    wait_until_set.set()
+                    sleep(0.0001)
+                    wait_until_set.clear()
+                    wait_until_set.set()
+
+                # for time in range(times):
+
+                spins = netSE_mtx[:, 0]
+                energies = netSE_mtx[:, 1]
+
+                mean_spin[i] = DA.data_mean(spins[-times:])/len(self.internal_arr)
+                E_means[i] = DA.data_mean(energies[-times:])
+                cur_E_mean = DA.data_mean(energies[-times:])
+                E_stds[i] = DA.std_dev(energies[-times:], cur_E_mean)
+
+            finished.set()
+            start_itt.set()
+            wait_until_set.set()
+
+            for t in thread_pool:
+                t.join()
+
+            end_time = time.time()
+            inF.print_stdout(
+                f'get_spin_energy is 100% complete in '
+                f'{end_time-start_time:.8f} seconds!',
+                end='\n')
+            self.plot_spin_energy(BJs, mean_spin, E_stds, save=save,
+                                  auto_plot=auto_plot, times=times)
+            return([mean_spin, E_means, E_stds])
+        except KeyboardInterrupt:
+            print('Keyboard Inturrupt, exiting...\n')
+            finished.set()
+            wait_until_set.set()
+            for t in thread_pool:
+                t.terminate()
+            exit()
+        except Exception:
+            PE.PrintException()
 
     def plot_spin_energy(self, bjs: ndarray,
                          ms: ndarray | list,
@@ -273,68 +415,128 @@ class LatticeDriver:
             itterations to preform.
         """
         try:
-            if self.time != times:
-                self.set_time(times)
-            netSE_mtx = self.ZERO_mtx
             energy = self.internal_arr.__threadlauncher__(
                 self.internal_arr.__NN_Worker__, True)
-            if progress is True:
-                inF.print_stdout(
-                    'Computing Metropolis Algorithm with iterations'
-                    f'={times}...')
+
+            # multithreading object declarations
+            qsize = self.internal_arr.tc
+            res = queue.MyQueue()
+            start_queue = queue.MyQueue()
+            start_itt = mltp.Event()
+            wait_until_set = mltp.Event()
+            finished = mltp.Event()
+
+            thread_pool: list[mltp.Process] = []
+            for itt_num in range(self.internal_arr.tc):
+                thread_pool.append(mltp.Process(
+                    target=self.internal_arr.__Sum_Worker__,
+                    args=(self.internal_arr.bounds[itt_num],
+                          res,
+                          start_queue,
+                          start_itt,
+                          wait_until_set,
+                          finished)))
+                thread_pool[itt_num].start()
+
             prev_sum = 0
             prev_energy = energy
             rand_xy = []
             flip_num = math.trunc(np.log10(len(self.internal_arr)))
-            for i in range(times):
-                rand_xy.clear()
-                for j in range(flip_num):
-                    # pick random point on array and flip spin
-                    test = [randint(0, self.Lshape[0] - 1),
-                            randint(0, self.Lshape[1] - 1)]
-                    if self[test].get_spin() == 0 or self[test] in rand_xy:
-                        continue
-                    else:
-                        rand_xy.append(self[test])
-                dE_tot = 0
-                for node_i in rand_xy:
-                    if node_i.get_spin() == 0:
-                        netSE_mtx[i, 0] = prev_sum
-                        netSE_mtx[i, 1] = prev_energy
-                        continue
-                    # compute change in energy with nearest neighbors
-                    E_i: np.int64 = 0
-                    E_f: np.int64 = 0
 
-                    # call multithread neighbors sum
-                    for neighbor in node_i:
-                        if neighbor.get_spin() == 0:
+            if self.time != times:
+                self.set_time(times)
+            netSE_mtx = self.ZERO_mtx
+            if progress is True:
+                inF.print_stdout(
+                    'Computing Metropolis Algorithm with iterations'
+                    f'={times}...')
+
+            for itt_num in range(times):
+                    rand_xy.clear()
+                    for nth_flip in range(flip_num):
+                        # pick random point on array and flip spin
+                        test = [randint(0, self.Lshape[0] - 1),
+                                randint(0, self.Lshape[1] - 1)]
+                        if self[test].get_spin() == 0 or self[test] in rand_xy:
                             continue
-                        E_i += node_i.get_spin() * neighbor.get_spin()
-                        E_f += -1 * node_i.get_spin() * neighbor.get_spin()
+                        else:
+                            rand_xy.append(self[test])
+                    dE_tot = 0
+                    for node_i in rand_xy:
+                        if node_i.get_spin() == 0:
+                            netSE_mtx[itt_num, 0] = prev_sum
+                            netSE_mtx[itt_num, 1] = prev_energy
+                            continue
+                        # compute change in energy with nearest neighbors
+                        E_i: np.int64 = 0
+                        E_f: np.int64 = 0
 
-                    # change state with designated probabilities
-                    dE = E_f-E_i
+                        # sum neighbors
+                        for neighbor in node_i:
+                            if neighbor.get_spin() == 0:
+                                continue
+                            E_i += node_i.get_spin() * neighbor.get_spin()
+                            E_f += -1 * node_i.get_spin() * neighbor.get_spin()
 
-                    if (dE > 0) and (
-                       (randint(0, 100) / 100) < np.exp(-BJ * dE)):
-                        node_i.flip_spin()
-                    elif dE <= 0:
-                        node_i.flip_spin()
-                    dE_tot += dE
+                        # change state with designated probabilities
+                        dE = E_f-E_i
 
-                netSE_mtx[i, 0] = self.internal_arr.__threadlauncher__(
-                    self.internal_arr.__Sum_Worker__, has_retval=True)
-                prev_sum = netSE_mtx[i, 0]
-                energy += dE_tot
-                prev_energy = energy
-                netSE_mtx[i, 1] = energy
-            # for i in range(0, times):
+                        if (dE > 0) and (
+                           (randint(0, 100) / 100) < np.exp(-BJ * dE)):
+                            node_i.flip_spin()
+                        elif dE <= 0:
+                            node_i.flip_spin()
+                        dE_tot += dE
+
+                    # begin calculating total spin of lattice
+                    wait_until_set.clear()
+                    while start_queue.qsize() != qsize:
+                        sleep(0.0000001)
+
+                    try:
+                        for j in range(qsize):
+                            # empty the start queue, yeah I wish there was a
+                            # better way to do this...
+                            # https://xkcd.com/292/
+                            # mutter mutter velociraptors...
+                            start_queue.get()
+                    except Empty:
+                        pass
+                    start_itt.set()
+
+                    while res.qsize() != qsize:
+                        # wait for results to populate the results queue
+                        sleep(0.0000001)
+
+                    try:
+                        for j in range(qsize):
+                            netSE_mtx[itt_num, 0] += res.get()
+                    except Empty:
+                        pass
+
+                    # reset event variables
+                    start_itt.clear()
+                    wait_until_set.set()
+
+                    prev_sum = netSE_mtx[itt_num, 0]
+                    energy += dE_tot
+                    prev_energy = energy
+                    netSE_mtx[itt_num, 1] = energy
+                # for time in range(times):
+
             if progress is True:
                 inF.print_stdout('Metropolis Algorithm complete!')
             if quiet is False:
                 self.plot_metrop(netSE_mtx, BJ, save=save, auto_plot=auto_plot)
+            finished.set()
             return(netSE_mtx)
+        except KeyboardInterrupt:
+            print('Keyboard Inturrupt, exiting...\n')
+            finished.set()
+            wait_until_set.set()
+            for t in thread_pool:
+                t.terminate()
+            exit()
         except Exception:
             PE.PrintException()
 

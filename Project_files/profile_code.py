@@ -11,12 +11,12 @@ import sys  # noqa E402
 import matplotlib.pyplot as plt # noqa E402
 import numpy as np # noqa E402
 import datetime as dt # noqa E402
-from LatticeClass_F import lattice_class as lt # noqa E402
+from LatticeDriver import LatticeDriver as lt # noqa E402
 import PrintException as PE  # noqa E402
-import input_funcs as inF  # noqa E402
+import InputFuncs as inF  # noqa E402
 from getpass import getpass  # noqa E402
 from random import random  # noqa E402
-import Data_Analysis as DA  # noqa E402
+import DataAnalysis as DA  # noqa E402
 import warnings  # noqa E402
 import cProfile  # noqa E402
 import pstats  # noqa E402
@@ -39,10 +39,11 @@ def main(*args, **kwargs) -> int:
         N = 32
         M = 32
         size = [N, M]
-        total_time = 200
+        total_time = 100
         a = 0.1
-        b = 2
-        step = 0.05
+        b = 10
+        num_points = 10
+        step = (b-a)/num_points
         BJs = np.arange(a, b, step)
 
         lt_a = lt(1, size)
