@@ -53,7 +53,9 @@ def main(*args, **kwargs) -> int:
         N = 32
         M = 32
         size = [N, M]
-        total_time = 1000
+        total_time = int(4*math.trunc(np.sqrt(N*M)) /
+                     math.ceil(0.01*N*M))
+        print(total_time)
         a = 0.1
         b = 10+a
         num_points = 100

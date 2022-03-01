@@ -196,7 +196,6 @@ class LinkedLattice:
                        bounds: list | ndarray,
                        results_queue: mltp.Queue,
                        start_queue: queue.MyQueue,
-                       finish_queue: queue.MyQueue,
                        start_itt,
                        wait_until_set,
                        finished: mltp) -> int | Int:

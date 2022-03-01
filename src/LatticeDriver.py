@@ -30,6 +30,7 @@ import math
 import multiprocessing as mltp
 import MLTPQueue as queue
 from time import sleep
+import DataAnalysis as DA
 
 
 GNum = Union[number, Number]
@@ -216,7 +217,6 @@ class LatticeDriver:
             qsize = self.internal_arr.tc
             res = queue.MyQueue(qsize)
             start_queue = queue.MyQueue(qsize)
-            finish_queue = queue.MyQueue(qsize)
             start_itt = mltp.Event()
             wait_until_set = mltp.Event()
             finished = mltp.Event()
@@ -228,14 +228,13 @@ class LatticeDriver:
                     args=(self.internal_arr.bounds[itt_num],
                           res,
                           start_queue,
-                          finish_queue,
                           start_itt,
                           wait_until_set,
                           finished)))
                 thread_pool[itt_num].start()
             prev_sum = 0
             rand_xy = []
-            flip_num = math.trunc(np.log10(len(self.internal_arr)))
+            flip_num = math.ceil(4 * np.log2(len(self.internal_arr)))
 
             if __times is None:
                 times = 1
@@ -344,9 +343,10 @@ class LatticeDriver:
                 spins = netSE_mtx[:, 0]
                 energies = netSE_mtx[:, 1]
 
-                mean_spin[i] = spins[-times:].mean()/len(self.internal_arr)
-                E_means[i] = energies[-times:].mean()
-                E_stds[i] = energies[-times:].std()
+                mean_spin[i] = DA.data_mean(spins[-times:])/len(self.internal_arr)
+                E_means[i] = DA.data_mean(energies[-times:])
+                cur_E_mean = DA.data_mean(energies[-times:])
+                E_stds[i] = DA.std_dev(energies[-times:], cur_E_mean)
 
             finished.set()
             start_itt.set()
