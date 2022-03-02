@@ -1,5 +1,5 @@
 # The most important note
-> C++20 > Python... remade this in C++ and its almost two orders of magnitude faster. Whomever said I needed to use python for this as it is industry standard and all that jazz doesnt know what is up... Time spent > all else. I did spend many hours profiling and optomizing the crap out of this and even rewrote a few things from scratch, so I am confident this is the fastest this can run short of a entire rewrite.
+> C++23 > Python... remade this in C++ and its almost two orders of magnitude faster. Whomever said I needed to use python for this as it is industry standard and all that jazz doesnt know what is up... Time spent > all else. I did spend many hours profiling and optomizing the crap out of this and even rewrote a few things from scratch, so I am confident this is the fastest this can run short of a entire rewrite.
 
 # Project Brief
 This is a program written in pure python that simulates the Ising model of atomic spins. The Ising model of spins is a simple, but powerful model that displays the basics of phase transitions with temperature. My model also supports the natural crystal symmetries of C3V, C4V, C5V and C6V with voids in the lattice.
