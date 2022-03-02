@@ -50,14 +50,14 @@ def generate_random(gen_num: int) -> list:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 64
-        M = 64
+        N = 12
+        M = 12
         size = [N, M]
-        total_time = 100 # 4*math.trunc(np.sqrt(N*M))
+        total_time = 100  # 4*math.trunc(np.sqrt(N*M))
         print(total_time)
         a = 0.1
         b = 10+a
-        num_points = 10
+        num_points = 100
         step = (b-a)/num_points
         BJs = np.arange(a, b, step)
         output = ''
@@ -92,7 +92,7 @@ def main(*args, **kwargs) -> int:
                 # DOCtest seed = 1644121893
                 # good seed 1644144314
                 seed = 1644121893
-                lt_c4v_up.randomize(voids=True, probs=[15, 80, 5],
+                lt_c4v_up.randomize(voids=True, probs=[42, 53, 5],
                                     rand_seed=seed)
                 lt_c3v_up.randomize(voids=True, probs=[15, 80, 5],
                                     rand_seed=seed)

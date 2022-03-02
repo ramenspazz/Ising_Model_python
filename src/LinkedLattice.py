@@ -4,7 +4,6 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
-from time import sleep
 # Typing imports
 from typing import Optional, TypedDict, Union, Callable
 from numbers import Number
@@ -196,14 +195,25 @@ class LinkedLattice:
                        bounds: list | ndarray,
                        results_queue: mltp.Queue,
                        start_queue: queue.MyQueue,
-                       start_itt,
-                       wait_until_set,
-                       finished: mltp) -> int | Int:
+                       start_itt: mltp._EventType,
+                       wait_until_set: mltp._EventType,
+                       finished: mltp._EventType) -> int | Int:
         """
             Parameters
             ----------
             bounds : `list` | `ndarray` -> ArrayLike
                 - Bounds for worker summation.
+
+            results_queue : `multithreading`.Queue
+                -
+            start_queue : `queue`.`MyQueue`
+                - User defined class from stack exchange that `super`'s the
+                multiprocessing queue class.
+            start_itt : `multithreading`.`_EventType`
+                -
+            wait_until_set : `multithreading`.`_EventType`
+                -
+            finished : `multithreading`.`_EventType`
 
             Returns
             -------
