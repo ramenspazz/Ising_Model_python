@@ -292,11 +292,12 @@ class LatticeDriver:
                         dE_tot += dE
 
                     # begin calculating total spin of lattice
-                    wait_sum.clear()
                     wait_sum.set()
                     wait_sum.clear()
                     while st_queue_sum.qsize() != qsize:
-                        # print(start_queue.qsize())
+                        # play with this sleep time value if you want, might
+                        # give you better or worse preformace.
+                        sleep(0.0000001)
                         pass
                     try:
                         for j in range(qsize):
@@ -310,6 +311,9 @@ class LatticeDriver:
                     start_sum.set()
                     while res_sum.qsize() != qsize:
                         # wait for results to populate the results queue
+                        # play with this sleep time value if you want, might
+                        # give you better or worse preformace.
+                        sleep(0.0000001)
                         pass
                     try:
                         for j in range(qsize):
@@ -317,19 +321,18 @@ class LatticeDriver:
                     except Empty:
                         pass
                     # reset event variables
-                    start_sum.clear()
                     start_sum.set()
                     start_sum.clear()
                     wait_sum.set()
+                    # play with this sleep time value if you want, might
+                    # give you better or worse preformace.
                     sleep(0.00001)
                     wait_sum.clear()
-                    wait_sum.set()
 
                     prev_sum = netSE_mtx[itt_num, 0]
                     energy += dE_tot
                     prev_energy = energy
                     netSE_mtx[itt_num, 1] = energy
-
                 # for itt_num in range(times):
 
                 spins = netSE_mtx[:, 0]

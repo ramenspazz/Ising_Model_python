@@ -50,10 +50,10 @@ def generate_random(gen_num: int) -> list:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 256
-        M = 256
+        N = 512
+        M = 512
         size = [N, M]
-        total_time = 1000  # 4*math.trunc(np.sqrt(N*M))
+        total_time = 100  # 4*math.trunc(np.sqrt(N*M))
         print(total_time)
         a = 0.1
         b = 10+a
@@ -190,7 +190,9 @@ def main(*args, **kwargs) -> int:
                                       auto_plot=auto_plot)
     except KeyboardInterrupt:
         inF.cls()
-        inF.print_stdout("Keyboard Interrupt, closing...", end='\n')
+        inF.print_stdout("Keyboard Interrupt, closing can take a moment"
+                         " But usually succedes...",
+                         end='\n')
         exit()
     except Exception:
         PE.PrintException()

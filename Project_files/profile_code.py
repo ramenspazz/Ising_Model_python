@@ -32,8 +32,8 @@ def main(*args, **kwargs) -> int:
         # 32x32     => ~44.75876808 seconds runtime
         # 64x64     => ~81.04408002 seconds runtime
         # 128x128   => ~245.7723527 seconds runtime
-        N = 32
-        M = 32
+        N = 512
+        M = 512
         size = [N, M]
         total_time = 100
         a = 0.1

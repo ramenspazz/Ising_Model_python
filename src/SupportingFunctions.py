@@ -43,7 +43,7 @@ def Array2Bytes(input_arr: ndarray) -> bytes:
         `bytes`(`input_arr`) : `bytes`
             - byte representation of ndarray.
     """
-    return(bytes(input_arr))
+    return(hash(input_arr.tobytes()))
 
 
 def DividendRemainder(n: int | Int,
@@ -130,12 +130,13 @@ def RoundNum(input: Float,
             `int`(`0`).
     """
     if isinstance(input, ndarray) is True:
+        # pythons round is faster than np.round
         ret_val = np.zeros(input.shape)
         for i in range(len(input)):
             if round_fig is not None:
-                ret_val[i] = np.round(input[i], round_fig)
+                ret_val[i] = round(input[i], round_fig)
             else:
-                ret_val[i] = np.round(input[i], figures)
+                ret_val[i] = round(input[i], figures)
                 if ret_val[i] is -0.0:  # intentional check for -0.0
                     ret_val[i] = 0
         return(ret_val)
@@ -144,9 +145,9 @@ def RoundNum(input: Float,
             return(0)
         else:
             if round_fig is not None:
-                return(np.round(input, round_fig))
+                return(round(input, round_fig))
             else:
-                return(np.round(input, figures))
+                return(round(input, figures))
 
 
 def Array_IsClose(A: ndarray | list,

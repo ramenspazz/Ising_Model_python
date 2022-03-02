@@ -4,6 +4,7 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
+import math
 # Typing imports
 from typing import Optional, TypedDict, Union, Callable
 from numbers import Number
@@ -88,7 +89,12 @@ class LinkedLattice:
         self.setup_basis(basis_arr)
         self.setup_multithreading()
         self.__calcneighbor__()
-        self.__threadlauncher__(self.__generation_worker__, False, threads=1)
+        inF.print_stdout('Generating structure...')
+        gen_threads = 2 if self.tc > 2 else 1
+        self.__threadlauncher__(self.__generation_worker__, False,
+                                generate_call=True,
+                                threads=gen_threads)
+        inF.print_stdout('Generation complete!', end='\n')
 
     def setup_basis(self, basis_arr):
         if basis_arr is not None:
@@ -129,20 +135,13 @@ class LinkedLattice:
         if self.tc == 1:
             self.bounds.append([0, x*y-1])
         elif not ((DivRem[0] == 0) or (DivRem[0] == 1)):
-            if DivRem[1] == 0:
-                # tc evenly divides the area so split the alttice into
-                # tc instances of DivRem[0] Nodes total.
-                for i in range(self.tc):
-                    lower = i*DivRem[0]
-                    upper = (i+1)*DivRem[0] - 1
-                    self.bounds.append([lower, upper])
-            else:
-                # create tc instances of DivRem[0] size to sum
-                # tc instances of DivRem[0] Nodes total.
-                for i in range(self.tc):
-                    lower = i*DivRem[0]
-                    upper = (i+1)*DivRem[0] - 1
-                    self.bounds.append([lower, upper])
+            # create tc instances of DivRem[0] size to sum
+            # tc instances of DivRem[0] Nodes total.
+            for i in range(self.tc):
+                lower = i*DivRem[0]
+                upper = (i+1)*DivRem[0] - 1
+                self.bounds.append([lower, upper])
+            if DivRem[1] > 0:
                 # append the extra
                 self.bounds.append([(self.tc+1)*DivRem[0] - 1, x*y-1 - 1])
         elif DivRem[0] == 0:
@@ -163,33 +162,50 @@ class LinkedLattice:
     def __threadlauncher__(self,
                            run_function: Callable[[], list],
                            has_retval: bool,
+                           generate_call: Optional[bool] = False,
                            threads: Optional[int] = None) -> int | None:
         """
             TODO : write docstring
         """
-        thread_count = threads if threads is not None else self.tc
-        with CF.ThreadPoolExecutor(max_workers=thread_count) as exe:
-            if thread_count == 1:
-                futures = {exe.submit(
-                    run_function,
-                    [0, self.__shape[0]*self.__shape[1]])}
-            else:
-                futures = {exe.submit(
-                    run_function,
-                    bound): bound for bound in self.bounds}
+        try:
+            x = self.__shape[0]
+            y = self.__shape[1]
+            thread_count = threads if threads is not None else self.tc
+            bounds = []
+            if (generate_call is True) and thread_count == 2:
+                DivRem = DividendRemainder(x, y, 2)
+                for i in range(thread_count):
+                    lower = i*DivRem[0]
+                    upper = (i+1)*DivRem[0] - 1
+                    bounds.append([lower, upper])
+                if DivRem[1] > 0:
+                    # append the extra and add new thread
+                    thread_count += 1
+                    bounds.append([(self.tc+1)*DivRem[0] - 1, x*y-1 - 1])
+            with CF.ThreadPoolExecutor(max_workers=thread_count) as exe:
+                if thread_count == 1:
+                    futures = {exe.submit(
+                        run_function,
+                        [0, self.__shape[0]*self.__shape[1]])}
+                else:
+                    futures = {exe.submit(
+                        run_function,
+                        bound): bound for bound in bounds}
+                if has_retval:
+                    res = 0
+                    for future in CF.as_completed(futures):
+                        try:
+                            data = future.result()
+                        except Exception:
+                            return(0)
+                        else:
+                            res += data
             if has_retval:
-                res = 0
-                for future in CF.as_completed(futures):
-                    try:
-                        data = future.result()
-                    except Exception:
-                        return(0)
-                    else:
-                        res += data
-        if has_retval:
-            return(res)
-        else:
-            return
+                return(res)
+            else:
+                return
+        except Exception:
+            PE.PrintException()
 
     def __Sum_Worker__(self,
                        bounds: list | ndarray,
