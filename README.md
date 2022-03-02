@@ -1,5 +1,3 @@
-Important notes at the bottom of the README
-
 # Project Brief
 This is a program written in pure python that simulates the Ising model of atomic spins. The Ising model of spins is a simple, but powerful model that displays the basics of phase transitions with temperature. My model also supports the natural crystal symmetries of C3V, C4V, C5V and C6V with voids in the lattice.
 
@@ -55,10 +53,4 @@ Download and install miniconda:
 - Activate the newly created python enviroment with ```conda activate <name here>```.
 - Run the file main.py like so: ```<your path to the conda env> -O <the path to>\main.py```
 - Finally set your launcher with your program of choice to be the anaconda powershell launcher and you are done!
-
-# Important Notes
-- I recommend using the script file ```main.py``` instead of the jupyter notebook. Jupyter notebooks just needlessly complicate things. It YMMV when it comes to using Visual Studio Code jupyter enviroments (works fine for me), versus the jupyter provided enviroment (doesn't work fine for me).
-- In my test VM of Windows on my computer and on my USB bootable Windows installation for testing, the multithreading library in python correctly launches the required number of threads, but in Microsoft Windows some threads are locked by the global interpreter lock (GIL) and thus do no work. This causes 16 threads to launch, but only 6 of them to do work and can cause race conditions and hanging. This issue does not exist in OSX or UNIX. If you can get it running in native Windows then awesome, please let me know, but it is not my experience with my testing VM and USB bootable that this works properly. My friend could get it working on his laptop, but I am unsure if the other threads were doing work or not, I was not able to test that, only verify that the program ran and the expected output was generated for the program test case. WSL displays these bugs as well but still runs fine, and it is infuriating :<
-
-You have been warned.
 
