@@ -8,15 +8,11 @@ Purpose: main driver file for ISING model simulation
 import path_setup
 path_setup.path_setup()
 import sys  # noqa E402
-import matplotlib.pyplot as plt # noqa E402
 import numpy as np # noqa E402
 import datetime as dt # noqa E402
 from LatticeDriver import LatticeDriver as lt # noqa E402
 import PrintException as PE  # noqa E402
 import InputFuncs as inF  # noqa E402
-from getpass import getpass  # noqa E402
-from random import random  # noqa E402
-import DataAnalysis as DA  # noqa E402
 import warnings  # noqa E402
 import cProfile  # noqa E402
 import pstats  # noqa E402

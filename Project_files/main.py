@@ -50,15 +50,14 @@ def generate_random(gen_num: int) -> list:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 32
-        M = 32
+        N = 64
+        M = 64
         size = [N, M]
-        total_time = int(4*math.trunc(np.sqrt(N*M)) /
-                     math.ceil(0.01*N*M))
+        total_time = 1000 # 4*math.trunc(np.sqrt(N*M))
         print(total_time)
         a = 0.1
         b = 10+a
-        num_points = 100
+        num_points = 10
         step = (b-a)/num_points
         BJs = np.arange(a, b, step)
         output = ''

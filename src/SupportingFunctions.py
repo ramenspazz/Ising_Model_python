@@ -7,7 +7,7 @@ from __future__ import annotations
 # Typing imports
 from typing import Optional
 # import matplotlib.pyplot as plt
-from numpy import integer as Int, floating as Float, ndarray  # noqa E501
+from numpy import int64, integer as Int, floating as Float, ndarray  # noqa E501
 import math
 
 # Functions and Libraries
@@ -34,16 +34,16 @@ def GetIndex(i: int, x_range: int) -> ndarray:
             int(i / x_range)]))
 
 
-def ArrayHash(input_arr: ndarray) -> bytes:
+def Array2Bytes(input_arr: ndarray) -> bytes:
     """
         Pray IEEE 754 is not in the array.
 
         Returns
         -------
-        hash : `bytes`
-            - byte hash of array using the numpy function `tobytes`.
+        `bytes`(`input_arr`) : `bytes`
+            - byte representation of ndarray.
     """
-    return(hash(input_arr.tobytes()))
+    return(bytes(input_arr))
 
 
 def DividendRemainder(n: int | Int,

@@ -63,7 +63,10 @@ class Node:
     def __len__(self):
         return(len(self.links))
 
-    def __iter__(self) -> Node:
+    def __iter__(self):
+        return(self.__next__())
+
+    def __next__(self) -> Node:
         try:
             for link in self.links:
                 yield(link)

@@ -23,6 +23,7 @@ import LinkedLattice as lc
 import DataAnalysis as DA
 import random
 from random import randint
+from Node import Node
 import PrintException as PE
 import time
 import InputFuncs as inF
@@ -107,12 +108,11 @@ class LatticeDriver:
         except Exception:
             PE.PrintException()
 
-    def __getitem__(self, *args) -> lc.Node:
+    def __getitem__(self, *args) -> Node:
         """
             Returns
             -------
             `Node` at the requested location if it exists, else return None.
-            (TODO : CURRENTLY ERRORS [IndexError] ON OUT OF RANGE)
         """
         try:
             if args is None:
@@ -126,7 +126,7 @@ class LatticeDriver:
         except Exception:
             PE.PrintException()
 
-    def __iter__(self) -> lc.Node | None:
+    def __iter__(self) -> Node | None:
         for node in self.internal_arr:
             yield node
 
@@ -169,13 +169,12 @@ class LatticeDriver:
         """
             Purpose
             -------
-            Uses the matplotlib function matplotlib.pyplot.scatter to plot the
-            spin states of the lattice nodes.
+            Updates the data representation of the lattice.
         """
         try:
             for i in range(self.Lshape[0]):
                 for j in range(self.Lshape[1]):
-                    cur = self[i, j]
+                    cur = self[np.array([i, j])]
                     if self.first_run is True:
                         self.lat_spins.get('x').append(cur.get_coords()[0])
                         self.lat_spins.get('y').append(cur.get_coords()[1])
@@ -233,7 +232,7 @@ class LatticeDriver:
                           finished)))
                 thread_pool[itt_num].start()
             prev_sum = 0
-            rand_xy = []
+            rand_xy: list[Node] = []
             flip_num = math.ceil(4 * np.log2(len(self.internal_arr)))
 
             if __times is None:
@@ -260,8 +259,10 @@ class LatticeDriver:
                     # select spins to flip
                     for nth_flip in range(flip_num):
                         # pick random point on array and flip spin
-                        test = [randint(0, self.Lshape[0] - 1),
-                                randint(0, self.Lshape[1] - 1)]
+                        # test = [randint(0, self.Lshape[0] - 1),
+                        #         randint(0, self.Lshape[1] - 1)]
+                        test = np.array([math.trunc((random.random()) * (self.Lshape[0] - 1)),
+                                math.trunc((random.random()) * (self.Lshape[1] - 1))])
                         if self[test].get_spin() == 0 or self[test] in rand_xy:
                             continue
                         else:
@@ -286,7 +287,7 @@ class LatticeDriver:
                         dE = E_f-E_i
 
                         if (dE > 0) and (
-                           (randint(0, 100) / 100) < np.exp(-bj * dE)):
+                           (random.uniform(0, 1)) < np.exp(-bj * dE)):
                             node_i.flip_spin()
                         elif dE <= 0:
                             node_i.flip_spin()
@@ -345,8 +346,7 @@ class LatticeDriver:
 
                 mean_spin[i] = DA.data_mean(spins[-times:])/len(self.internal_arr)
                 E_means[i] = DA.data_mean(energies[-times:])
-                cur_E_mean = DA.data_mean(energies[-times:])
-                E_stds[i] = DA.std_dev(energies[-times:], cur_E_mean)
+                E_stds[i] = DA.std_dev(energies[-times:], E_means[i])
 
             finished.set()
             start_itt.set()
@@ -384,11 +384,11 @@ class LatticeDriver:
                             f' C{self.internal_arr.rots}V')
         xname = 'Scaled Temperature'
         yname1 = 'Average Spin'
-        yname2 = 'Heat Capacity on Boltzmann constant squared'
+        yname2 = 'Heat Capacity per total spins'
         fig.add_trace(go.Scatter(x=1/bjs, y=ms, mode='lines'), row=1, col=1)
         fig.update_xaxes(title_text=xname, row=1, col=1)
         fig.update_yaxes(title_text=yname1, row=1, col=1)
-        fig.add_trace(go.Scatter(x=1/bjs, y=E_stds*bjs, mode='lines'), row=1,
+        fig.add_trace(go.Scatter(x=1/bjs, y=E_stds*bjs/self.__len__(), mode='lines'), row=1,
                       col=2)
         fig.update_xaxes(title_text=xname, row=1, col=2)
         fig.update_yaxes(title_text=yname2, row=1, col=2)
@@ -455,8 +455,8 @@ class LatticeDriver:
                     rand_xy.clear()
                     for nth_flip in range(flip_num):
                         # pick random point on array and flip spin
-                        test = [randint(0, self.Lshape[0] - 1),
-                                randint(0, self.Lshape[1] - 1)]
+                        test = np.array([math.trunc((random.random()) * (self.Lshape[0] - 1)),
+                                math.trunc((random.random()) * (self.Lshape[1] - 1))])
                         if self[test].get_spin() == 0 or self[test] in rand_xy:
                             continue
                         else:
@@ -482,7 +482,7 @@ class LatticeDriver:
                         dE = E_f-E_i
 
                         if (dE > 0) and (
-                           (randint(0, 100) / 100) < np.exp(-BJ * dE)):
+                           (random.uniform(0, 1)) < np.exp(-BJ * dE)):
                             node_i.flip_spin()
                         elif dE <= 0:
                             node_i.flip_spin()

@@ -188,7 +188,7 @@ def WLS_fit(x_data=None, y_data=None, errors=None, weight_data=None,
                     A_mtx[i, 1] = float(1)
                     b_vec[i] = y_data[i]
             else:
-                raise("ERROR, lengths for x_data and y_data are not equal!")
+                raise ValueError("Lengths for x_data and y_data are not equal!")
 
             A_T_mtx = A_mtx.T
             if (weight_data is None):
@@ -338,9 +338,9 @@ def list_dot(a, b):
                 temp += a[i]*b[i]
             return(temp)
         else:
-            raise("ERROR: the length of a and b must be the same!")
-    except Exception as e:
-        print(e)
+            raise ValueError("The length of a and b must be the same!")
+    except Exception :
+        PE.PrintException()
 
 
 def std_dev(data, mean, sample=True):
@@ -474,8 +474,8 @@ def fit_gaussian(data, mean, sd, n_bins=None, bin_width=None, condense=False,
         x = np.linspace(data_min, data_max, data_len)
 
         if not (n_bins is None or bin_width is None):
-            raise Exception("ERROR, Only one optional parameter may be given"
-                            "at a time! Two were passed to define bin width!")
+            raise ValueError("Only one optional parameter may be given"
+                            "at a time! Two or more were passed to define bin width!")
         elif not (n_bins or bin_width):
             data_IRQ = np.subtract(*np.percentile(sorted_data, [75, 25]))
             bin_width = 2*data_IRQ/data_len**float(1/3)

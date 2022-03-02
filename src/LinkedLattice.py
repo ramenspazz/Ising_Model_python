@@ -16,7 +16,7 @@ from numpy import int8, integer as Int, floating as Float, ndarray, number  # no
 from Node import Node
 
 # Functions and Libraries
-from SupportingFunctions import GetIndex, ArrayHash, DividendRemainder
+from SupportingFunctions import GetIndex, Array2Bytes, DividendRemainder
 from SupportingFunctions import RoundNum
 import numpy as np
 import PrintException as PE
@@ -220,7 +220,7 @@ class LinkedLattice:
             start_itt.wait()
             psum: np.int64 = 0
             for node in self.range(lower_B, upper_B):
-                psum += node.spin_state
+                psum += node.get_spin()
             results_queue.put_nowait(psum)
             wait_until_set.wait(timeout=1)
             added_to_queue = False
@@ -231,20 +231,16 @@ class LinkedLattice:
         lower_B = bounds[0]
         upper_B = bounds[1]
         for node in self.range(lower_B, upper_B):
+            if node.get_spin() == 0:
+                continue
             for nbr in node:
-                psum += nbr.get_spin()
+                psum += node.get_spin() * nbr.get_spin()
         return(psum)
 
     def __iter__(self):
-        try:
-            if self.origin_node is None:
-                raise ValueError("Iterator : origin node is None!")
-            for i in range(self.num_nodes):
-                yield(self[GetIndex(i, self.__shape[0])])
-        except Exception:
-            PE.PrintException()
+        return(self.__next__())
 
-    def __next__(self):
+    def __next__(self) -> Node:
         try:
             if self.origin_node is None:
                 raise ValueError("Iterator : origin node is None!")
@@ -272,7 +268,7 @@ class LinkedLattice:
                 cor = np.array(__NodeIndex)
             else:
                 __NodeIndex
-            lookup = self.node_dict.get(ArrayHash(cor))
+            lookup = self.node_dict.get(Array2Bytes(cor))
             if lookup is not None:
                 lookup.set_spin = __value
             elif lookup is None:
@@ -281,12 +277,12 @@ class LinkedLattice:
             PE.PrintException()
 
     def __getitem__(self,
-                    __NodeIndex: list | ndarray | int | Int) -> Node | None:
+                    __NodeIndex: ndarray | int | Int) -> Node | None:
         """
             Parameters
             ----------
-            __NodeIndex : `list` of coordinates
-                The coordinates are a 1D `list` with two entries, where the
+            __NodeIndex : `ndarray`[`Int`] | `int`
+                The coordinates are a 1D `ndarray` with two entries, where the
                 first entry represents the x and the second y the coordinate
                 respectivly.
 
@@ -299,13 +295,9 @@ class LinkedLattice:
         """
         try:
             if type(__NodeIndex) == int:
-                if __NodeIndex > self.num_nodes - 1:
-                    raise IndexError(f'Index {__NodeIndex} is out of bounds'
-                                     f' for max index of {self.num_nodes-1:}!')
                 return(self[GetIndex(__NodeIndex)])
             else:
-                lookup = np.array(__NodeIndex) if (type(__NodeIndex) == tuple or type(__NodeIndex) == list) else __NodeIndex  # noqa E501 lazy
-                return(self.node_dict.get(ArrayHash(lookup)))
+                return(self.node_dict.get(Array2Bytes(__NodeIndex)))
         except Exception:
             PE.PrintException()
 
@@ -342,29 +334,29 @@ class LinkedLattice:
                 Can not append, Child and Parrent are the same!
                 """)
             elif isinstance(child, list) and parent is not None:
-                name = ArrayHash(parent.get_index())
+                name = Array2Bytes(parent.get_index())
                 self.node_dict[name] = parent
                 self.num_nodes += 1
                 for neighbor in child:
                     parent.add_link(neighbor)
-                    name = ArrayHash(neighbor.get_index())
+                    name = Array2Bytes(neighbor.get_index())
                     self.node_dict[name] = neighbor
                     self.num_nodes += 1
             elif isinstance(child, list) is True:
                 for neighbor in child:
                     parent.add_link(neighbor)
-                    name = ArrayHash(neighbor.get_combination())
+                    name = Array2Bytes(neighbor.get_combination())
                     self.node_dict[name] = neighbor
                     self.num_nodes += 1
             elif parent is None:
                 if self.origin_node is None:
                     self.origin_node = child
-                name = ArrayHash(child.get_index())
+                name = Array2Bytes(child.get_index())
                 self.node_dict[name] = child
                 self.num_nodes += 1
             elif parent is not None:
                 parent.add_link(child)
-                name = ArrayHash(child.get_index())
+                name = Array2Bytes(child.get_index())
                 self.node_dict[name] = child
                 self.num_nodes += 1
         except Exception:
