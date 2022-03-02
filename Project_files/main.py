@@ -53,7 +53,7 @@ def main(*args, **kwargs) -> int:
         N = 64
         M = 64
         size = [N, M]
-        total_time = 1000 # 4*math.trunc(np.sqrt(N*M))
+        total_time = 100 # 4*math.trunc(np.sqrt(N*M))
         print(total_time)
         a = 0.1
         b = 10+a
@@ -69,16 +69,6 @@ def main(*args, **kwargs) -> int:
         lt_c4v_dn = lt(1, size)
         lt_c3v_dn = lt(1, size, [[1, 0], [0.5, np.sqrt(3)/2]])
         lt_c6v_dn = lt(1, size, [[0.5, np.sqrt(3)/2], [0.5, -np.sqrt(3)/2]])
-
-        # print('lt_a connected')
-        # for item in lt_a[1, 1]:
-        #     print(item)
-        # print('lt_b connected')
-        # for item in lt_b[1, 1]:
-        #     print(item)
-        # print('lt_c connected')
-        # for item in lt_c[1, 1]:
-        #     print(item)
 
         inF.print_stdout(
             "would you like to save plots automatically? (y/n): ")

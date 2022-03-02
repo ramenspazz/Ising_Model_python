@@ -214,23 +214,24 @@ class LatticeDriver:
 
             # multithreading object declarations
             qsize = self.internal_arr.tc
-            res = queue.MyQueue(qsize)
-            start_queue = queue.MyQueue(qsize)
-            start_itt = mltp.Event()
-            wait_until_set = mltp.Event()
-            finished = mltp.Event()
+            res_sum = queue.MyQueue(qsize)
+            st_queue_sum = queue.MyQueue(qsize)
+            start_sum = mltp.Event()
+            wait_sum = mltp.Event()
+            finished_sum = mltp.Event()
 
-            thread_pool: list[mltp.Process] = []
+            thread_pool_sum: list[mltp.Process] = []
             for itt_num in range(self.internal_arr.tc):
-                thread_pool.append(mltp.Process(
+                thread_pool_sum.append(mltp.Process(
                     target=self.internal_arr.__Sum_Worker__,
                     args=(self.internal_arr.bounds[itt_num],
-                          res,
-                          start_queue,
-                          start_itt,
-                          wait_until_set,
-                          finished)))
-                thread_pool[itt_num].start()
+                          res_sum,
+                          st_queue_sum,
+                          start_sum,
+                          wait_sum,
+                          finished_sum)))
+                thread_pool_sum[itt_num].start()
+
             prev_sum = 0
             rand_xy: list[Node] = []
             flip_num = math.ceil(4 * np.log2(len(self.internal_arr)))
@@ -243,13 +244,13 @@ class LatticeDriver:
                 self.set_time(times)
 
             start_time = time.time()
+            energy = self.internal_arr.__threadlauncher__(
+                    self.internal_arr.__NN_Worker__, True)
+
             for i, bj in enumerate(BJs):
                 inF.print_stdout(
                     f"get_spin_energy is {100 * i / len(BJs) :.1f}%"
                     f" complete...")
-                energy = self.internal_arr.__threadlauncher__(
-                    self.internal_arr.__NN_Worker__, True)
-
                 prev_energy = energy
 
                 netSE_mtx = self.ZERO_mtx
@@ -259,8 +260,7 @@ class LatticeDriver:
                     # select spins to flip
                     for nth_flip in range(flip_num):
                         # pick random point on array and flip spin
-                        # test = [randint(0, self.Lshape[0] - 1),
-                        #         randint(0, self.Lshape[1] - 1)]
+                        # randint is very slow so dont use it, ever please...
                         test = np.array([math.trunc((random.random()) * (self.Lshape[0] - 1)),
                                 math.trunc((random.random()) * (self.Lshape[1] - 1))])
                         if self[test].get_spin() == 0 or self[test] in rand_xy:
@@ -283,22 +283,21 @@ class LatticeDriver:
                             E_i += node_i.get_spin() * neighbor.get_spin()
                             E_f += -1 * node_i.get_spin() * neighbor.get_spin()
 
-                        # change state with designated probabilities
+                        # change state
                         dE = E_f-E_i
 
                         if (dE > 0) and (
-                           (random.uniform(0, 1)) < np.exp(-bj * dE)):
+                            (random.uniform(0, 1)) < np.exp(-bj * dE)):
                             node_i.flip_spin()
                         elif dE <= 0:
                             node_i.flip_spin()
                         dE_tot += dE
 
                     # begin calculating total spin of lattice
-                    wait_until_set.clear()
-                    wait_until_set.set()
-                    wait_until_set.clear()
-
-                    while start_queue.qsize() != qsize:
+                    wait_sum.clear()
+                    wait_sum.set()
+                    wait_sum.clear()
+                    while st_queue_sum.qsize() != qsize:
                         # print(start_queue.qsize())
                         # sleep(0.1)
                         pass
@@ -308,38 +307,34 @@ class LatticeDriver:
                             # better way to do this...
                             # https://xkcd.com/292/
                             # mutter mutter velociraptors...
-                            start_queue.get()
+                            st_queue_sum.get()
                     except Empty:
                         pass
-                    
-                    start_itt.set()
-
-                    while res.qsize() != qsize:
+                    start_sum.set()
+                    while res_sum.qsize() != qsize:
                         # wait for results to populate the results queue
                         # sleep(0.00001)
                         pass
-
                     try:
                         for j in range(qsize):
-                            netSE_mtx[itt_num, 0] += res.get()
+                            netSE_mtx[itt_num, 0] += res_sum.get()
                     except Empty:
                         pass
+                    # reset event variables
+                    start_sum.clear()
+                    start_sum.set()
+                    start_sum.clear()
+                    wait_sum.set()
+                    sleep(0.0001)
+                    wait_sum.clear()
+                    wait_sum.set()
 
                     prev_sum = netSE_mtx[itt_num, 0]
                     energy += dE_tot
                     prev_energy = energy
                     netSE_mtx[itt_num, 1] = energy
 
-                    # reset event variables
-                    start_itt.clear()
-                    start_itt.set()
-                    start_itt.clear()
-                    wait_until_set.set()
-                    sleep(0.0001)
-                    wait_until_set.clear()
-                    wait_until_set.set()
-
-                # for time in range(times):
+                # for itt_num in range(times):
 
                 spins = netSE_mtx[:, 0]
                 energies = netSE_mtx[:, 1]
@@ -348,11 +343,11 @@ class LatticeDriver:
                 E_means[i] = DA.data_mean(energies[-times:])
                 E_stds[i] = DA.std_dev(energies[-times:], E_means[i])
 
-            finished.set()
-            start_itt.set()
-            wait_until_set.set()
+            finished_sum.set()
+            start_sum.set()
+            wait_sum.set()
 
-            for t in thread_pool:
+            for t in thread_pool_sum:
                 t.join()
 
             end_time = time.time()
@@ -365,9 +360,9 @@ class LatticeDriver:
             return([mean_spin, E_means, E_stds])
         except KeyboardInterrupt:
             print('Keyboard Inturrupt, exiting...\n')
-            finished.set()
-            wait_until_set.set()
-            for t in thread_pool:
+            finished_sum.set()
+            wait_sum.set()
+            for t in thread_pool_sum:
                 t.terminate()
             exit()
         except Exception:
@@ -420,8 +415,8 @@ class LatticeDriver:
 
             # multithreading object declarations
             qsize = self.internal_arr.tc
-            res = queue.MyQueue()
-            start_queue = queue.MyQueue()
+            res = queue.MyQueue(qsize)
+            start_queue = queue.MyQueue(qsize)
             start_itt = mltp.Event()
             wait_until_set = mltp.Event()
             finished = mltp.Event()
@@ -451,10 +446,14 @@ class LatticeDriver:
                     'Computing Metropolis Algorithm with iterations'
                     f'={times}...')
 
-            for itt_num in range(times):
+                for itt_num in range(times):
                     rand_xy.clear()
+
+                    # select spins to flip
                     for nth_flip in range(flip_num):
                         # pick random point on array and flip spin
+                        # test = [randint(0, self.Lshape[0] - 1),
+                        #         randint(0, self.Lshape[1] - 1)]
                         test = np.array([math.trunc((random.random()) * (self.Lshape[0] - 1)),
                                 math.trunc((random.random()) * (self.Lshape[1] - 1))])
                         if self[test].get_spin() == 0 or self[test] in rand_xy:
@@ -467,11 +466,10 @@ class LatticeDriver:
                             netSE_mtx[itt_num, 0] = prev_sum
                             netSE_mtx[itt_num, 1] = prev_energy
                             continue
-                        # compute change in energy with nearest neighbors
+
+                        # compute change in energy
                         E_i: np.int64 = 0
                         E_f: np.int64 = 0
-
-                        # sum neighbors
                         for neighbor in node_i:
                             if neighbor.get_spin() == 0:
                                 continue
@@ -482,7 +480,7 @@ class LatticeDriver:
                         dE = E_f-E_i
 
                         if (dE > 0) and (
-                           (random.uniform(0, 1)) < np.exp(-BJ * dE)):
+                            (random.uniform(0, 1)) < np.exp(-BJ * dE)):
                             node_i.flip_spin()
                         elif dE <= 0:
                             node_i.flip_spin()
@@ -490,9 +488,13 @@ class LatticeDriver:
 
                     # begin calculating total spin of lattice
                     wait_until_set.clear()
-                    while start_queue.qsize() != qsize:
-                        sleep(0.0000001)
+                    wait_until_set.set()
+                    wait_until_set.clear()
 
+                    while start_queue.qsize() != qsize:
+                        # print(start_queue.qsize())
+                        # sleep(0.1)
+                        pass
                     try:
                         for j in range(qsize):
                             # empty the start queue, yeah I wish there was a
@@ -502,11 +504,13 @@ class LatticeDriver:
                             start_queue.get()
                     except Empty:
                         pass
+                    
                     start_itt.set()
 
                     while res.qsize() != qsize:
                         # wait for results to populate the results queue
-                        sleep(0.0000001)
+                        # sleep(0.00001)
+                        pass
 
                     try:
                         for j in range(qsize):
@@ -514,22 +518,35 @@ class LatticeDriver:
                     except Empty:
                         pass
 
-                    # reset event variables
-                    start_itt.clear()
-                    wait_until_set.set()
-
                     prev_sum = netSE_mtx[itt_num, 0]
                     energy += dE_tot
                     prev_energy = energy
                     netSE_mtx[itt_num, 1] = energy
-                # for time in range(times):
+
+                    # reset event variables
+                    start_itt.clear()
+                    start_itt.set()
+                    start_itt.clear()
+                    wait_until_set.set()
+                    sleep(0.0001)
+                    wait_until_set.clear()
+                    wait_until_set.set()
+                # for itt_num in range(times):
+                yield(netSE_mtx)
+            # yield loop?
+
+            finished.set()
+            start_itt.set()
+            wait_until_set.set()
+
+            for t in thread_pool:
+                t.join()
 
             if progress is True:
                 inF.print_stdout('Metropolis Algorithm complete!')
             if quiet is False:
                 self.plot_metrop(netSE_mtx, BJ, save=save, auto_plot=auto_plot)
             finished.set()
-            return(netSE_mtx)
         except KeyboardInterrupt:
             print('Keyboard Inturrupt, exiting...\n')
             finished.set()
