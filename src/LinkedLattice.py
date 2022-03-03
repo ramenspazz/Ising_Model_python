@@ -4,7 +4,6 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
-import math
 # Typing imports
 from typing import Optional, TypedDict, Union, Callable
 from numbers import Number
@@ -28,6 +27,8 @@ import MLTPQueue as queue
 
 # ignore warning on line 564
 import warnings
+
+from WaitListLock import WaitListLock
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -74,7 +75,7 @@ class LinkedLattice:
         self.num_nodes: int = int(0)
         self.num_voids: int = int(0)
         self.origin_node: Node = Node([0, 0], [0, 0])
-        self.__shape = __shape
+        self.Shape = __shape
         self.b1_plus_b2_len: float = None
         self.nbrs_list: list[list[ndarray]] = list()
         self.visited = list()
@@ -128,8 +129,8 @@ class LinkedLattice:
             self.rots: int = 4
 
     def setup_multithreading(self):
-        x = self.__shape[0]
-        y = self.__shape[1]
+        x = self.Shape[0]
+        y = self.Shape[1]
         if self.tc != 1:
             DivRem = DividendRemainder(x, y, self.tc)
         if self.tc == 1:
@@ -155,7 +156,7 @@ class LinkedLattice:
     def range(self, start: int, stop: int, step: Optional[int] = None) -> Node:
         try:
             for i in range(start, stop):
-                yield self[GetIndex(i, self.__shape[0])]
+                yield self[GetIndex(i, self.Shape[0])]
         except Exception:
             PE.PrintException()
 
@@ -168,8 +169,8 @@ class LinkedLattice:
             TODO : write docstring
         """
         try:
-            x = self.__shape[0]
-            y = self.__shape[1]
+            x = self.Shape[0]
+            y = self.Shape[1]
             thread_count = threads if threads is not None else self.tc
             bounds = []
             if (generate_call is True) and thread_count == 2:
@@ -186,7 +187,7 @@ class LinkedLattice:
                 if thread_count == 1:
                     futures = {exe.submit(
                         run_function,
-                        [0, self.__shape[0]*self.__shape[1]])}
+                        [0, self.Shape[0]*self.Shape[1]])}
                 else:
                     futures = {exe.submit(
                         run_function,
@@ -209,11 +210,10 @@ class LinkedLattice:
 
     def __Sum_Worker__(self,
                        bounds: list | ndarray,
-                       results_queue: mltp.Queue,
-                       start_queue: queue.MyQueue,
-                       start_itt: mltp._EventType,
-                       wait_until_set: mltp._EventType,
-                       finished: mltp._EventType) -> int | Int:
+                       thread_num: int,
+                       result_queue: queue.MyQueue,
+                       ready_sum: WaitListLock,
+                       finished_sum: mltp._EventType) -> int | Int:
         """
             Parameters
             ----------
@@ -225,10 +225,13 @@ class LinkedLattice:
             start_queue : `queue`.`MyQueue`
                 - User defined class from stack exchange that `super`'s the
                 multiprocessing queue class.
+
             start_itt : `multithreading`.`_EventType`
                 -
+
             wait_until_set : `multithreading`.`_EventType`
                 -
+
             finished : `multithreading`.`_EventType`
 
             Returns
@@ -238,30 +241,29 @@ class LinkedLattice:
         """
         lower_B = bounds[0]
         upper_B = bounds[1]
-        added_to_queue = False
-        while not finished.is_set():
-            if added_to_queue is False:
-                start_queue.put_nowait(1)
-                added_to_queue = True
-            start_itt.wait()
+        while True:
             psum: np.int64 = 0
+            ready_sum.Wait(thread_num)
+            if finished_sum.is_set() is True:
+                break
             for node in self.range(lower_B, upper_B):
                 psum += node.get_spin()
-            results_queue.put_nowait(psum)
-            wait_until_set.wait(timeout=1)
-            added_to_queue = False
+            result_queue.put_nowait(psum)
         return
 
-    def __NN_Worker__(self, bounds: list) -> int | Int:
+    def __Energy_Worker__(self, bounds: list) -> int | Int:
         psum: np.int64 = 0
         lower_B = bounds[0]
         upper_B = bounds[1]
+        energy = 0
         for node in self.range(lower_B, upper_B):
+            psum = 0
             if node.get_spin() == 0:
                 continue
             for nbr in node:
-                psum += node.get_spin() * nbr.get_spin()
-        return(psum)
+                psum += nbr.get_spin()
+            energy += -1 * psum * node.get_spin()
+        return(psum/self.rots)
 
     def __iter__(self):
         return(self.__next__())
@@ -271,7 +273,7 @@ class LinkedLattice:
             if self.origin_node is None:
                 raise ValueError("Iterator : origin node is None!")
             for i in range(self.num_nodes):
-                yield(self[GetIndex(i, self.__shape[0])])
+                yield(self[GetIndex(i, self.Shape[0])])
         except Exception:
             PE.PrintException()
 
@@ -303,7 +305,7 @@ class LinkedLattice:
             PE.PrintException()
 
     def __getitem__(self,
-                    __NodeIndex: ndarray | int | Int) -> Node | None:
+                    __NodeIndex: ndarray | int | Int) -> Node:
         """
             Parameters
             ----------
@@ -444,9 +446,9 @@ class LinkedLattice:
                 coord = RoundNum(node.get_coords() + nbr[0], 10)
                 index = node.get_index() + nbr[1]
                 x_in_bounds = ((index[0] >= 0) and
-                               (index[0] < self.__shape[0]))
+                               (index[0] < self.Shape[0]))
                 y_in_bounds = ((index[1] >= 0) and
-                               (index[1] < self.__shape[1]))
+                               (index[1] < self.Shape[1]))
                 if (x_in_bounds and y_in_bounds) is True:
                     possible_nb = self[index]
                     if possible_nb is not None:
@@ -473,7 +475,7 @@ class LinkedLattice:
             lower_B = bounds[0]
             upper_B = bounds[1]
             for i in range(lower_B, upper_B):
-                index = GetIndex(i, self.__shape[0])
+                index = GetIndex(i, self.Shape[0])
                 coord = RoundNum(index.dot(self.basis_arr), 10)
                 node = self[index]
                 if node is None:
@@ -484,9 +486,9 @@ class LinkedLattice:
                     coord = RoundNum(node.get_coords() + nbr[0], 10)
                     index = node.get_index() + nbr[1]
                     x_in_bounds = ((index[0] >= 0) and
-                                   (index[0] < self.__shape[0]))
+                                   (index[0] < self.Shape[0]))
                     y_in_bounds = ((index[1] >= 0) and
-                                   (index[1] < self.__shape[1]))
+                                   (index[1] < self.Shape[1]))
                     if x_in_bounds and y_in_bounds:
                         with self.lock:
                             possible_nb = self[index]

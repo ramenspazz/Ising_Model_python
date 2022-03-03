@@ -55,7 +55,7 @@ class MyQueue(Queue):
     refer to here: https://docs.python.org/3/library/pickle.html#pickling-class-instances
     """
 
-    def __init__(self, qsize):
+    def __init__(self, qsize = 0):
         super().__init__(maxsize=qsize, ctx=multiprocessing.get_context())
         self.max_size = qsize
         self.size = SharedCounter(0)

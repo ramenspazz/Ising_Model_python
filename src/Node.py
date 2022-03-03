@@ -63,7 +63,7 @@ class Node:
     def __len__(self):
         return(len(self.links))
 
-    def __iter__(self):
+    def __iter__(self) -> Node:
         return(self.__next__())
 
     def __next__(self) -> Node:
