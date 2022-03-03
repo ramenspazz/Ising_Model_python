@@ -268,10 +268,9 @@ class LatticeDriver:
                         nbrs_Energy += neighbor.get_spin()
                     dE = 2 * S_i * nbrs_Energy
                     if dE < 0:
-                        # print('Spin flipped')
                         node_i.flip_spin()
-                    if random.uniform(0, 1) > math.exp(-bj*dE):
-                        # print('Spin flipped')
+                    elif ((math.trunc(random.random()*100)/100) >
+                            np.exp(-bj*dE)):
                         node_i.flip_spin()
 
                     # begin calculating total spin of lattice
