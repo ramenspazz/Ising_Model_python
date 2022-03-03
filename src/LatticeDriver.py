@@ -341,7 +341,7 @@ class LatticeDriver:
         fig.add_trace(go.Scatter(x=1/BJs, y=magnitization,
                                  mode='lines+markers'), row=1, col=1)
         fig.update_xaxes(title_text=xname, type='log', row=1, col=1)
-        fig.update_yaxes(title_text=yname1, row=1, col=1)
+        fig.update_yaxes(title_text=yname1, range=[-1, 1], row=1, col=1)
         fig.add_trace(go.Scatter(x=1/BJs, y=E_std*BJs, mode='lines+markers'),
                       row=1, col=2)
         fig.update_xaxes(title_text=xname, type='log', row=1, col=2)
@@ -353,6 +353,11 @@ class LatticeDriver:
             fig.write_image(fname)
         if auto_plot is True:
             fig.show()
+
+# TODO wolffAlgorithm
+    def WolffAlgorithm(self):
+        pass
+
 
 # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
 # TODO: the worm algorithm.
