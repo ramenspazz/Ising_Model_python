@@ -11,7 +11,7 @@ Purpose:
 # data-file you would like to use.
 '''
 from numbers import Number
-from numpy import ndarray, number
+from numpy import float64, ndarray, number
 from typing import Optional, Union  # noqa F401
 import math
 import numpy as np
@@ -372,7 +372,7 @@ def std_dev(data, mean, sample=True):
         PE.PrintException()
 
 
-def ordinal_stats(sorted_vec: list | ndarray) -> tuple:
+def ordinal_stats(sorted_vec: list | ndarray) -> list[float64]:
     """
     Returns the minimum, maximum, and median values of a list of real-numbers.
     """
@@ -384,7 +384,7 @@ def ordinal_stats(sorted_vec: list | ndarray) -> tuple:
                       sorted_vec[int(len(sorted_vec)/2)])/2)
         else:
             median = sorted_vec[int(len(sorted_vec)/2)]
-        return(minimum, maximum, median)
+        return([minimum, maximum, median])
     except Exception:
         PE.PrintException()
 
