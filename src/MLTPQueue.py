@@ -1,5 +1,8 @@
+from __future__ import annotations
 from multiprocessing.queues import Queue
 import multiprocessing
+from typing import TypeVar, Generic
+T = TypeVar('T')
 
 # The following implementation of custom MyQueue to avoid NotImplementedError
 # when calling queue.qsize() in MacOS X comes almost entirely from this github
@@ -33,7 +36,7 @@ class SharedCounter(object):
         return self.count.value
 
 
-class MyQueue(Queue):
+class ThQueue(Queue):
     """ A portable implementation of multiprocessing.Queue.
     Because of multithreading / multiprocessing semantics, Queue.qsize() may
     raise the NotImplementedError exception on Unix platforms like Mac OS X

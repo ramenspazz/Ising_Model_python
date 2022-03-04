@@ -11,7 +11,7 @@ from numbers import Number
 # Math related
 import numpy.typing as npt  # noqa
 from numpy.typing import NDArray
-from numpy import int8, integer as Int, floating as Float, ndarray, number  # noqa E501
+from numpy import float64, int64, int8, integer as Int, floating as Float, ndarray, number  # noqa E501
 from Node import Node
 
 # Functions and Libraries
@@ -23,7 +23,7 @@ import InputFuncs as inF
 import concurrent.futures as CF
 import multiprocessing as mltp
 from threading import RLock
-import MLTPQueue as queue
+import MLTPQueue as MLTPqueue
 
 # ignore warning on line 564
 import warnings
@@ -57,6 +57,7 @@ class LinkedLattice:
     def __init__(self,
                  scale_factor: Float,
                  __shape: list,
+                 J: float64,
                  basis_arr: Optional[NDArray[Float]] = None,
                  threads: Optional[int] = None):
         """
@@ -69,6 +70,7 @@ class LinkedLattice:
                 Euclidean basis if no basis is specified.
         """
         self.lock = RLock()
+        self.J = J
         self.scale_factor: Float = scale_factor
         self.node_dict: CoordinateDict = {}
         self.cord_dict: CoordinateDict = {}
@@ -97,173 +99,24 @@ class LinkedLattice:
                                 threads=gen_threads)
         inF.print_stdout('Generation complete!', end='\n')
 
-    def setup_basis(self, basis_arr):
-        if basis_arr is not None:
-            if isinstance(basis_arr, ndarray) is not True:
-                basis_arr = np.array(basis_arr)
-            self.basis_arr: NDArray[Float] = basis_arr
-            # Begin by calculating the inner-products of each possible
-            # combination to use in the next step.
-            a = np.float64(self.basis_arr[0].dot(self.basis_arr[1]))
-            b = np.float64(self.basis_arr[0].dot(self.basis_arr[0]))
-            c = np.float64(self.basis_arr[1].dot(self.basis_arr[1]))
-            arg = np.float64(a / (np.sqrt(b) * np.sqrt(c)))
-            # This is A*B/|AB|=cos(C), using the a, b and c above
-            __rots = np.float64(2*np.pi/np.arccos(arg))
-            __ciel = np.ceil(__rots)
-            __floor = np.floor(__rots)
-            # d_up and d_dn are the percent change between the
-            # unmutated number and the resulting floor and
-            # cieling operation respectivly.
-            d_up = np.abs(1-__rots/__ciel)
-            d_dn = np.abs(1-__rots/__floor)
-            if d_dn < 10**(-12):
-                self.rots: int | np.float64 = int(np.floor(__rots))
-            elif d_up < 10**(-12):
-                self.rots: int | np.float64 = int(np.ceil(__rots))
-            else:
-                self.rots: int | np.float64 = np.float64(__rots)
-        elif basis_arr is None:
-            self.basis_arr: NDArray[Float] = np.array(
-                [[1, 0], [0, 1]])
-            self.rots: int = 4
-
-    def setup_multithreading(self):
-        x = self.Shape[0]
-        y = self.Shape[1]
-        if self.tc != 1:
-            DivRem = DividendRemainder(x, y, self.tc)
-        if self.tc == 1:
-            self.bounds.append([0, x*y-1])
-        elif not ((DivRem[0] == 0) or (DivRem[0] == 1)):
-            # create tc instances of DivRem[0] size to sum
-            # tc instances of DivRem[0] Nodes total.
-            for i in range(self.tc):
-                lower = i*DivRem[0]
-                upper = (i+1)*DivRem[0] - 1
-                self.bounds.append([lower, upper])
-            if DivRem[1] > 0:
-                # append the extra
-                self.bounds.append([(self.tc+1)*DivRem[0] - 1, x*y-1 - 1])
-        elif DivRem[0] == 0:
-            self.tc = 1
-            self.bounds.append([0, x*y-1 - 1])
-        elif DivRem[0] == 1 and DivRem[1] != 0:
-            self.bounds.append([0, self.tc - 1])
-            self.bounds.append([self.tc, x*y-1 - 1])
-            self.tc = 2
-
-    def range(self, start: int, stop: int, step: Optional[int] = None) -> Node:
-        try:
-            for i in range(start, stop):
-                yield self[GetIndex(i, self.Shape[0])]
-        except Exception:
-            PE.PrintException()
-
-    def __threadlauncher__(self,
-                           run_function: Callable[[], list],
-                           has_retval: bool,
-                           generate_call: Optional[bool] = False,
-                           threads: Optional[int] = None) -> int | None:
+    def __calcneighbor__(self) -> None:
         """
-            TODO : write docstring
-        """
-        try:
-            x = self.Shape[0]
-            y = self.Shape[1]
-            thread_count = threads if threads is not None else self.tc
-            bounds = []
-            if (generate_call is True) and thread_count == 2:
-                DivRem = DividendRemainder(x, y, 2)
-                for i in range(thread_count):
-                    lower = i*DivRem[0]
-                    upper = (i+1)*DivRem[0] - 1
-                    bounds.append([lower, upper])
-                if DivRem[1] > 0:
-                    # append the extra and add new thread
-                    thread_count += 1
-                    bounds.append([(self.tc+1)*DivRem[0] - 1, x*y-1 - 1])
-            with CF.ThreadPoolExecutor(max_workers=thread_count) as exe:
-                if thread_count == 1:
-                    futures = {exe.submit(
-                        run_function,
-                        [0, self.Shape[0]*self.Shape[1]])}
-                else:
-                    futures = {exe.submit(
-                        run_function,
-                        bound): bound for bound in bounds}
-                if has_retval:
-                    res = 0
-                    for future in CF.as_completed(futures):
-                        try:
-                            data = future.result()
-                        except Exception:
-                            return(0)
-                        else:
-                            res += data
-            if has_retval:
-                return(res)
-            else:
-                return
-        except Exception:
-            PE.PrintException()
-
-    def __Sum_Worker__(self,
-                       bounds: list | ndarray,
-                       thread_num: int,
-                       result_queue: queue.MyQueue,
-                       ready_sum: WaitListLock,
-                       finished_sum: mltp._EventType) -> int | Int:
-        """
-            Parameters
-            ----------
-            bounds : `list` | `ndarray` -> ArrayLike
-                - Bounds for worker summation.
-
-            results_queue : `multithreading`.Queue
-                -
-            start_queue : `queue`.`MyQueue`
-                - User defined class from stack exchange that `super`'s the
-                multiprocessing queue class.
-
-            start_itt : `multithreading`.`_EventType`
-                -
-
-            wait_until_set : `multithreading`.`_EventType`
-                -
-
-            finished : `multithreading`.`_EventType`
-
-            Returns
+            Purpose
             -------
-            spin_sum : `int` | `numpy.integer`
-                - This threads final parital sum to return.
+            Construct and returns a dictonary of a possible lattice points that
+            are nearest neighbors to an origin point that can be arbitrarily
+            translated.
         """
-        lower_B = bounds[0]
-        upper_B = bounds[1]
-        while True:
-            psum: np.int64 = 0
-            ready_sum.Wait(thread_num)
-            if finished_sum.is_set() is True:
-                break
-            for node in self.range(lower_B, upper_B):
-                psum += node.get_spin()
-            result_queue.put_nowait(psum)
-        return
+        b1 = self.basis_arr[0]
+        b2 = self.basis_arr[1]  # TODO: maybe include this too?
 
-    def __Energy_Worker__(self, bounds: list) -> int | Int:
-        psum: np.int64 = 0
-        lower_B = bounds[0]
-        upper_B = bounds[1]
-        energy = 0
-        for node in self.range(lower_B, upper_B):
-            psum = 0
-            if node.get_spin() == 0:
-                continue
-            for nbr in node:
-                psum += nbr.get_spin()
-            energy += -1 * psum * node.get_spin()
-        return(psum/self.rots)
+        self.nbrs_list.append([b1, np.array([1, 0], int8)])
+        self.nbrs_list.append([-1*b1, np.array([-1, 0], int8)])
+        self.nbrs_list.append([b2, np.array([0, 1], int8)])
+        self.nbrs_list.append([-1*b2, np.array([0, -1], int8)])
+        if self.rots == 3 or self.rots == 6:
+            self.nbrs_list.append([b1 - b2, np.array([1, -1], int8)])
+            self.nbrs_list.append([b2 - b1, np.array([-1, 1], int8)])
 
     def __iter__(self):
         return(self.__next__())
@@ -338,6 +191,250 @@ class LinkedLattice:
         """
         return(self.num_nodes - self.num_voids)
 
+    def __generation_worker__(self, bounds: list | ndarray) -> None:
+        """
+            Parameters
+            ---------
+            bounds : `list` | `ndarray` -> ArrayLike
+                - Bounds for worker summation.
+
+            Returns
+            -------
+            spin_sum : `int` | `numpy.integer`
+                - This threads final parital sum to return.
+        """
+        try:
+            lower_B = bounds[0]
+            upper_B = bounds[1]
+            for i in range(lower_B, upper_B):
+                index = GetIndex(i, self.Shape[0])
+                coord = RoundNum(index.dot(self.basis_arr), 10)
+                node = self[index]
+                if node is None:
+                    node = Node(coord, index)
+                    self.append(node)
+                # generate the neighbors for the node
+                for nbr in self.nbrs_list:
+                    coord = RoundNum(node.get_coords() + nbr[0], 10)
+                    index = node.get_index() + nbr[1]
+                    x_in_bounds = ((index[0] >= 0) and
+                                   (index[0] < self.Shape[0]))
+                    y_in_bounds = ((index[1] >= 0) and
+                                   (index[1] < self.Shape[1]))
+                    if x_in_bounds and y_in_bounds:
+                        with self.lock:
+                            possible_nb = self[index]
+                        if possible_nb is not None:
+                            node.add_link(possible_nb)
+                        else:
+                            new_node = Node(coord, index)
+                            self.append(new_node, node)
+        except Exception:
+            PE.PrintException()
+
+    def __threadlauncher__(self,
+                           run_function: Callable[[], list],
+                           has_retval: bool,
+                           generate_call: Optional[bool] = False,
+                           threads: Optional[int] = None) -> int | None:
+        """
+            TODO : write docstring
+        """
+        try:
+            x = self.Shape[0]
+            y = self.Shape[1]
+            thread_count = threads if threads is not None else self.tc
+            bounds = []
+            if (generate_call is True) and thread_count == 2:
+                DivRem = DividendRemainder(x, y, 2)
+                for i in range(thread_count):
+                    lower = i*DivRem[0]
+                    upper = (i+1)*DivRem[0] - 1
+                    bounds.append([lower, upper])
+                if DivRem[1] > 0:
+                    # append the extra and add new thread
+                    thread_count += 1
+                    bounds.append([(self.tc+1)*DivRem[0] - 1, x*y-1 - 1])
+            with CF.ThreadPoolExecutor(max_workers=thread_count) as exe:
+                if thread_count == 1:
+                    futures = {exe.submit(
+                        run_function,
+                        [0, self.Shape[0]*self.Shape[1]])}
+                else:
+                    futures = {exe.submit(
+                        run_function,
+                        bound): bound for bound in bounds}
+                if has_retval:
+                    res = 0
+                    for future in CF.as_completed(futures):
+                        try:
+                            data = future.result()
+                        except Exception:
+                            return(0)
+                        else:
+                            res += data
+            if has_retval:
+                return(res)
+            else:
+                return
+        except Exception:
+            PE.PrintException()
+
+    def setup_basis(self, basis_arr):
+        if basis_arr is not None:
+            if isinstance(basis_arr, ndarray) is not True:
+                basis_arr = np.array(basis_arr)
+            self.basis_arr: NDArray[Float] = basis_arr
+            # Begin by calculating the inner-products of each possible
+            # combination to use in the next step.
+            a = np.float64(self.basis_arr[0].dot(self.basis_arr[1]))
+            b = np.float64(self.basis_arr[0].dot(self.basis_arr[0]))
+            c = np.float64(self.basis_arr[1].dot(self.basis_arr[1]))
+            arg = np.float64(a / (np.sqrt(b) * np.sqrt(c)))
+            # This is A*B/|AB|=cos(C), using the a, b and c above
+            __rots = np.float64(2*np.pi/np.arccos(arg))
+            __ciel = np.ceil(__rots)
+            __floor = np.floor(__rots)
+            # d_up and d_dn are the percent change between the
+            # unmutated number and the resulting floor and
+            # cieling operation respectivly.
+            d_up = np.abs(1-__rots/__ciel)
+            d_dn = np.abs(1-__rots/__floor)
+            if d_dn < 10**(-12):
+                self.rots: int | np.float64 = int(np.floor(__rots))
+            elif d_up < 10**(-12):
+                self.rots: int | np.float64 = int(np.ceil(__rots))
+            else:
+                self.rots: int | np.float64 = np.float64(__rots)
+        elif basis_arr is None:
+            self.basis_arr: NDArray[Float] = np.array(
+                [[1, 0], [0, 1]])
+            self.rots: int = 4
+
+    def setup_multithreading(self):
+        x = self.Shape[0]
+        y = self.Shape[1]
+        if self.tc != 1:
+            DivRem = DividendRemainder(x, y, self.tc)
+        if self.tc == 1:
+            self.bounds.append([0, x*y-1])
+        elif not ((DivRem[0] == 0) or (DivRem[0] == 1)):
+            # create tc instances of DivRem[0] size to sum
+            # tc instances of DivRem[0] Nodes total.
+            for i in range(self.tc):
+                lower = i*DivRem[0]
+                upper = (i+1)*DivRem[0] - 1
+                self.bounds.append([lower, upper])
+            if DivRem[1] > 0:
+                # append the extra
+                self.bounds.append([(self.tc+1)*DivRem[0] - 1, x*y-1 - 1])
+        elif DivRem[0] == 0:
+            self.tc = 1
+            self.bounds.append([0, x*y-1 - 1])
+        elif DivRem[0] == 1 and DivRem[1] != 0:
+            self.bounds.append([0, self.tc - 1])
+            self.bounds.append([self.tc, x*y-1 - 1])
+            self.tc = 2
+
+    def range(self, start: int, stop: int, step: Optional[int] = None) -> Node:
+        try:
+            for i in range(start, stop):
+                yield self[GetIndex(i, self.Shape[0])]
+        except Exception:
+            PE.PrintException()
+
+    def Sum_Worker(self,
+                   bounds: list | ndarray,
+                   thread_num: int,
+                   result_queue: MLTPqueue.ThQueue,
+                   ready_sum: WaitListLock,
+                   finished_sum: mltp._EventType) -> int | Int:
+        """
+            Parameters
+            ----------
+            bounds : `list` | `ndarray` -> ArrayLike
+                - Bounds for worker summation.
+
+            results_queue : `multithreading`.Queue
+                -
+            start_queue : `queue`.`MyQueue`
+                - User defined class from stack exchange that `super`'s the
+                multiprocessing queue class.
+
+            start_itt : `multithreading`.`_EventType`
+                -
+
+            wait_until_set : `multithreading`.`_EventType`
+                -
+
+            finished : `multithreading`.`_EventType`
+
+            Returns
+            -------
+            spin_sum : `int` | `numpy.integer`
+                - This threads final parital sum to return.
+        """
+        lower_B = bounds[0]
+        upper_B = bounds[1]
+        while True:
+            psum: int64 = 0
+            ready_sum.Wait(thread_num)
+            if finished_sum.is_set() is True:
+                break
+            for node in self.range(lower_B, upper_B):
+                psum += node.get_spin()
+            result_queue.put_nowait(psum)
+        return
+
+    def Energy_Worker(self,
+                      bounds: list | ndarray,
+                      thread_num: int,
+                      result_queue: MLTPqueue.ThQueue,
+                      ready_energy: WaitListLock,
+                      finished_energy: mltp._EventType) -> int | Int:
+        lower_B = bounds[0]
+        upper_B = bounds[1]
+        while True:
+            if finished_energy.is_set() is True:
+                break
+            ready_energy.Wait(thread_num)
+            energy: int64 = 0
+            for node in self.range(lower_B, upper_B):
+                psum: int64 = 0
+                if node.get_spin() == 0:
+                    continue
+                for nbr in node:
+                    psum += nbr.get_spin()
+                energy += -psum * node.get_spin()
+            result_queue.put_nowait(energy)
+        return
+
+    def SpinEnergy_Worker(self,
+                          bounds: list | ndarray,
+                          thread_num: int,
+                          result_queue: MLTPqueue.ThQueue,
+                          ready_energy: WaitListLock,
+                          finished_energy: mltp._EventType) -> int | Int:
+        lower_B = bounds[0]
+        upper_B = bounds[1]
+        # zero = np.zeros(2, int64)
+        while True:
+            SE_vec = np.zeros(2, int64)
+            psum: int64 = 0
+            if finished_energy.is_set() is True:
+                break
+            ready_energy.Wait(thread_num)
+            for node in self.range(lower_B, upper_B):
+                if node.get_spin() == 0:
+                    continue
+                psum = 0
+                SE_vec[0] += node.get_spin()
+                for nbr in node:
+                    psum += nbr.get_spin()
+                SE_vec[1] += -psum * node.get_spin()
+            result_queue.put_nowait(SE_vec)
+        return
+
     def append(self,
                child: list[Node] | Node,
                parent: Optional[Node] = None) -> None:
@@ -390,10 +487,6 @@ class LinkedLattice:
         except Exception:
             PE.PrintException()
 
-    def get_root(self) -> Node:
-        """Returns the origin (A.K.A. root) node."""
-        return(self.origin_node)
-
     def print_dict(self) -> None:
         """
             Purpose
@@ -404,35 +497,6 @@ class LinkedLattice:
         for key, val in self.node_dict.items():
             inF.print_stdout(f"key={key}, value={val}")
         inF.print_stdout('')
-
-    def set_basis(self, input_basis: NDArray[Float]) -> None:
-        """
-            Parameters
-            ----------
-            input_basis : `NDArray[Float]`
-                Specifies a basis for the crystal.
-        """
-        for basis_vector in input_basis:
-            self.basis_arr.append(basis_vector)
-
-    def __calcneighbor__(self) -> None:
-        """
-            Purpose
-            -------
-            Construct and returns a dictonary of a possible lattice points that
-            are nearest neighbors to an origin point that can be arbitrarily
-            translated.
-        """
-        b1 = self.basis_arr[0]
-        b2 = self.basis_arr[1]  # TODO: maybe include this too?
-
-        self.nbrs_list.append([b1, np.array([1, 0], int8)])
-        self.nbrs_list.append([-1*b1, np.array([-1, 0], int8)])
-        self.nbrs_list.append([b2, np.array([0, 1], int8)])
-        self.nbrs_list.append([-1*b2, np.array([0, -1], int8)])
-        if self.rots == 3 or self.rots == 6:
-            self.nbrs_list.append([b1 - b2, np.array([1, -1], int8)])
-            self.nbrs_list.append([b2 - b1, np.array([-1, 1], int8)])
 
     def NodesNeighbors(self, node: Node) -> None:
         """
@@ -456,46 +520,5 @@ class LinkedLattice:
                     else:
                         new_node = Node(coord, index)
                         self.append(new_node, node)
-        except Exception:
-            PE.PrintException()
-
-    def __generation_worker__(self, bounds: list | ndarray) -> None:
-        """
-            Parameters
-            ---------
-            bounds : `list` | `ndarray` -> ArrayLike
-                - Bounds for worker summation.
-
-            Returns
-            -------
-            spin_sum : `int` | `numpy.integer`
-                - This threads final parital sum to return.
-        """
-        try:
-            lower_B = bounds[0]
-            upper_B = bounds[1]
-            for i in range(lower_B, upper_B):
-                index = GetIndex(i, self.Shape[0])
-                coord = RoundNum(index.dot(self.basis_arr), 10)
-                node = self[index]
-                if node is None:
-                    node = Node(coord, index)
-                    self.append(node)
-                # generate the neighbors for the node
-                for nbr in self.nbrs_list:
-                    coord = RoundNum(node.get_coords() + nbr[0], 10)
-                    index = node.get_index() + nbr[1]
-                    x_in_bounds = ((index[0] >= 0) and
-                                   (index[0] < self.Shape[0]))
-                    y_in_bounds = ((index[1] >= 0) and
-                                   (index[1] < self.Shape[1]))
-                    if x_in_bounds and y_in_bounds:
-                        with self.lock:
-                            possible_nb = self[index]
-                        if possible_nb is not None:
-                            node.add_link(possible_nb)
-                        else:
-                            new_node = Node(coord, index)
-                            self.append(new_node, node)
         except Exception:
             PE.PrintException()
