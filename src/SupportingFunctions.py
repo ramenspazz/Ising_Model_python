@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import Optional
 # import matplotlib.pyplot as plt
 from numpy import int64, integer as Int, floating as Float, ndarray  # noqa E501
-import math
 
 # Functions and Libraries
 from numba import njit
@@ -46,9 +45,8 @@ def Array2Bytes(input_arr: ndarray) -> bytes:
     return(hash(input_arr.tobytes()))
 
 
-def DividendRemainder(n: int | Int,
-                      m: int | Int,
-                      t: int | Int) -> list[int | Int]:
+def DividendRemainder(dividend: int | Int,
+                      divisor: int | Int) -> list[int | Int]:
     """
         Purpose
         -------
@@ -65,46 +63,36 @@ def DividendRemainder(n: int | Int,
             all integers.
 
     """
-    t = int(t)
-    area = int(n * m)
-
+    # Might be necessary but for now doesnt appear to be relavant for my use
+    # case. Included just incase, just uncomment.
     # if not (MAX_INT > area > MIN_INT):
     #     raise ValueError('Input n and m are too large!')
-    if t > area:
-        return([0, area])
-    elif t == area:
+    if divisor > dividend:
+        return([0, dividend])
+    elif divisor == dividend:
         return([1, 0])
 
-    test = 0
-    div = 0
-    div_overflow = 0
-    OF_on = 0
-    prev = 0
+    test = np.int64(0)
+    div_power = np.int64(0)
+    quotient = np.int64(0)
+    prev = np.int64(0)
     while True:
-        test = math.trunc(t * div_overflow) + math.trunc(t << div)
+        test = (divisor << div_power) + (divisor * quotient)
 
-        if prev > area and test > area:
-            return([math.trunc((t << div) / t + div_overflow),
-                    area-t*np.floor(area / t)])
+        if test == dividend:
+            return([2 << div_power + quotient, 0])
 
-        elif prev < area and test > area:
-            return([div,
-                    area-t*np.floor(area / t)])
-
-        if test == area:
-            return([math.trunc((t << div) / t + div_overflow),
-                    area-t*np.floor(area / t)])
-
-        elif test < area:
-            prev = test
-            div += 1
+        elif test > dividend and prev < dividend:
+            if prev + divisor > dividend:
+                return([quotient + (2 << div_power - 2), dividend - prev])
+            quotient += 2 << (div_power - 2)
+            div_power = np.int64(0)
+            prev = quotient * divisor
             continue
 
-        elif prev < area and OF_on == 0:
-            div_overflow += math.trunc((t << (div - 1)) / t)
+        elif test < dividend:
             prev = test
-            OF_on = 1
-            div = 1
+            div_power += 1
             continue
 
 

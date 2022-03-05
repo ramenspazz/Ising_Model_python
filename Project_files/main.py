@@ -27,7 +27,7 @@ zeroC = 273.15
 
 def rand_time() -> int:
     out = int(dt.datetime.now().strftime('%s'))
-    sys.stdout.write(f"Time Seed = {out}\n")
+    sys.stdout.write(f"\nTime Seed = {out}\n")
     return(int(dt.datetime.now().strftime('%s')))
 
 
@@ -51,14 +51,14 @@ def generate_random(gen_num: int) -> list:
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 32
-        M = 32
+        N = 50
+        M = 50
         size = [N, M]
         total_time = 1000  # 4*math.trunc(np.sqrt(N*M))
-        J = 42  # eV
+        J = 1  # eV
         print(total_time)
-        a = T_to_Beta(zeroC)
-        b = T_to_Beta(1400+zeroC)
+        a = T_to_Beta(-200+zeroC)
+        b = T_to_Beta(zeroC)
         print(f'a={a}eV, b={b}eV')
         num_points = 10
         step = (b-a)/num_points
@@ -96,11 +96,11 @@ def main(*args, **kwargs) -> int:
                 # DOCtest seed = 1644121893
                 # good seed 1644144314
                 seed = 1644121893
-                lt_c4v_up.randomize(voids=True, probs=[30, 65, 5],
+                lt_c4v_up.randomize(voids=True, probs=[45, 50, 5],
                                     rand_seed=seed)
-                lt_c3v_up.randomize(voids=False, probs=[35, 65],
+                lt_c3v_up.randomize(voids=False, probs=[50, 50],
                                     rand_seed=seed)
-                lt_c6v_up.randomize(voids=True, probs=[15, 80, 5],
+                lt_c6v_up.randomize(voids=True, probs=[49, 41, 10],
                                     rand_seed=seed)
                 lt_c4v_dn.randomize(voids=True, probs=[53, 42, 5],
                                     rand_seed=seed)
@@ -141,6 +141,20 @@ def main(*args, **kwargs) -> int:
                 inF.print_stdout('Goodbye', end='\n')
                 exit()
 
+            relax_itt_num = 1000
+            lt_c4v_up.relax(relax_itt_num, Beta[0])
+            lt_c4v_up.update(set_state=True)
+            lt_c3v_up.relax(relax_itt_num, Beta[0])
+            lt_c3v_up.update(set_state=True)
+            lt_c6v_up.relax(relax_itt_num, Beta[0])
+            lt_c6v_up.update(set_state=True)
+            lt_c4v_dn.relax(relax_itt_num, Beta[0])
+            lt_c4v_dn.update(set_state=True)
+            lt_c3v_dn.relax(relax_itt_num, Beta[0])
+            lt_c3v_dn.update(set_state=True)
+            lt_c6v_dn.relax(relax_itt_num, Beta[0])
+            lt_c6v_dn.update(set_state=True)
+
             if auto_plot is True:
                 lt_c4v_up.plot()
                 lt_c3v_up.plot()
@@ -167,23 +181,24 @@ def main(*args, **kwargs) -> int:
                 step = (b-a)/num_points
                 Beta = np.arange(a, b, step)  # noqa
 
-            lt_c4v_up.WolffSpinEnergy(Beta, total_time, save=auto_save,
-                                      auto_plot=auto_plot)
+            lt_c4v_up.SpinEnergy(Beta, total_time, lt.MetropolisAlgorithm,
+                                 save=auto_save, auto_plot=auto_plot)
 
-            lt_c3v_up.WolffSpinEnergy(Beta, total_time, save=auto_save,
-                                      auto_plot=auto_plot)
+            lt_c3v_up.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,
+                                 save=auto_save, auto_plot=auto_plot)
 
-            lt_c6v_up.WolffSpinEnergy(Beta, total_time, save=auto_save,
-                                      auto_plot=auto_plot)
+            lt_c6v_up.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,
+                                 save=auto_save, auto_plot=auto_plot)
 
-            lt_c4v_dn.WolffSpinEnergy(Beta, total_time, save=auto_save,
-                                      auto_plot=auto_plot)
+            lt_c4v_dn.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,
+                                 save=auto_save, auto_plot=auto_plot)
 
-            lt_c3v_dn.WolffSpinEnergy(Beta, total_time, save=auto_save,
-                                      auto_plot=auto_plot)
+            lt_c3v_dn.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,
+                                 save=auto_save, auto_plot=auto_plot)
 
-            lt_c6v_dn.WolffSpinEnergy(Beta, total_time, save=auto_save,
-                                      auto_plot=auto_plot)
+            lt_c6v_dn.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,
+                                 save=auto_save, auto_plot=auto_plot)
+
     except KeyboardInterrupt:
         inF.cls()
         inF.print_stdout("Keyboard Interrupt, closing can take a moment"

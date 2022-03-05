@@ -131,105 +131,20 @@
 #     except Exception:
 #         PE.PrintException()
 
-# # TODO: Look into this http://mcwa.csi.cuny.edu/umass/izing/Ising_text.pdf
-# # TODO: the worm algorithm.
-# def metropolis(self,
-#                times: int | Int,
-#                Beta: float | Float,
-#                progress: Optional[bool] = None,
-#                quiet: Optional[bool] = False,
-#                save: Optional[bool] = False,
-#                auto_plot: Optional[bool] = True) -> ndarray:
-#     """
-#         Purpose
-#         -------
-#         Evolve the system and compute the metroplis approximation to the
-#         equlibrium state given a beta*J and number of monty carlo
-#         itterations to preform.
-#     """
-#     try:
-#         energy = self.LinkedLat.__threadlauncher__(
-#             self.LinkedLat.Energy_Worker, True)
-#         # multithreading object declarations
-#         qsize = self.LinkedLat.tc
-#         result_queue = MLTPqueue.ThQueue(qsize)
-#         ready_sum = WaitListLock(qsize)
-#         finished_sum = mltp.Event()
 
-#         thread_pool_sum: list[mltp.Process] = []
-#         for th_num in range(self.LinkedLat.tc):
-#             thread_pool_sum.append(mltp.Process(
-#                 target=self.LinkedLat.Sum_Worker,
-#                 args=(self.LinkedLat.bounds[th_num],
-#                       th_num,
-#                       result_queue,
-#                       ready_sum,
-#                       finished_sum)))
-#             thread_pool_sum[th_num].start()
 
-#         if self.time != times:
-#             self.set_time(times)
-#         netSE_mtx = self.ZERO_mtx
-#         if progress is True:
-#             inF.print_stdout(
-#                 'Computing Metropolis Algorithm with iterations'
-#                 f'={times}...')
+# # multithreading object declarations for sum
+# result_queue_SE = MLTPqueue.ThQueue(qsize)
+# ready_SE = WaitListLock(qsize)
+# finished_SE = mltp.Event()
 
-#         for itt_num in range(times):
-#             psum = 0
-#             # select spins to flip
-#             while True:
-#                 # pick random point on array and flip spin
-#                 # randint is very slow so dont use it, ever please...
-#                 rand_xy = np.array([math.trunc((random.random()) *
-#                                     (self.Lshape[0] - 1)),
-#                                     math.trunc((random.random()) *
-#                                     (self.Lshape[1] - 1))])
-#                 node_i = self[rand_xy]
-#                 if node_i.get_spin() == 0:
-#                     continue
-#                 else:
-#                     break
-#             S_i = node_i.get_spin()
-#             # compute change in energy
-#             nbrs_Energy: np.int64 = 0
-#             for neighbor in node_i:
-#                 if neighbor.get_spin() == 0:
-#                     continue
-#                 nbrs_Energy += neighbor.get_spin()
-#             dE = 2 * S_i * nbrs_Energy
-#             if dE < 0:
-#                 node_i.flip_spin()
-#             if random.uniform(0, 1) > math.exp(-Beta*dE):
-#                 node_i.flip_spin()
-
-#             # begin calculating total spin of lattice
-#             ready_sum.Check()
-#             ready_sum.Start_Threads()
-#             for j in range(qsize):
-#                 psum += result_queue.get(block=True)
-
-#             energy += dE
-#             netSE_mtx[itt_num, 0] = psum
-#             netSE_mtx[itt_num, 1] = energy
-#         # for itt_num in range(times): end
-
-#         finished_sum.set()
-#         ready_sum.Start_Threads()
-#         for t in thread_pool_sum:
-#             t.join()
-
-#         if progress is True:
-#             inF.print_stdout('Metropolis Algorithm complete!')
-#         if quiet is False:
-#             self.plot_metrop(netSE_mtx, Beta, save=save,
-#                              auto_plot=auto_plot)
-#     except KeyboardInterrupt:
-#         print('\nKeyboard Inturrupt, exiting...\n')
-#         finished_sum.set()
-#         ready_sum.Start_Threads()
-#         for t in thread_pool_sum:
-#             t.terminate()
-#         exit()
-#     except Exception:
-#         PE.PrintException()
+# thread_pool_SE: list[mltp.Process] = []
+# for th_num in range(self.LinkedLat.tc):
+#     thread_pool_SE.append(mltp.Process(
+#         target=self.LinkedLat.SpinEnergy_Worker,
+#         args=(self.LinkedLat.bounds[th_num],
+#               th_num,
+#               result_queue_SE,
+#               ready_SE,
+#               finished_SE)))
+#     thread_pool_SE[th_num].start()

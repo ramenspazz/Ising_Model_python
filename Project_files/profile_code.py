@@ -57,11 +57,11 @@ def main(*args, **kwargs) -> int:
         lt_c.randomize(voids=True, probs=[30, 65, 5],
                        rand_seed=seed)
 
-        lt_a.get_spin_energy(BJs, total_time, save=auto_save,
+        lt_a.MetropolisSpinEnergy(BJs, total_time, save=auto_save,
                              auto_plot=auto_plot)
-        lt_b.get_spin_energy(BJs, total_time, save=auto_save,
+        lt_b.MetropolisSpinEnergy(BJs, total_time, save=auto_save,
                              auto_plot=auto_plot)
-        lt_c.get_spin_energy(BJs, total_time, save=auto_save,
+        lt_c.MetropolisSpinEnergy(BJs, total_time, save=auto_save,
                              auto_plot=auto_plot)
     except KeyboardInterrupt:
         inF.cls()
