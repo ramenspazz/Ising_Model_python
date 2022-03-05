@@ -93,10 +93,8 @@ class LinkedLattice:
         self.setup_multithreading()
         self.__calcneighbor__()
         inF.print_stdout('Generating structure...')
-        gen_threads = 2 if self.tc > 2 else 1
         self.__threadlauncher__(self.__generation_worker__, False,
-                                generate_call=True,
-                                threads=gen_threads)
+                                generate_call=True)
         inF.print_stdout('Generation complete!', end='\n')
 
     def __calcneighbor__(self) -> None:
@@ -241,20 +239,7 @@ class LinkedLattice:
             TODO : write docstring
         """
         try:
-            x = self.Shape[0]
-            y = self.Shape[1]
             thread_count = threads if threads is not None else self.tc
-            bounds = []
-            if (generate_call is True) and thread_count == 2:
-                DivRem = DividendRemainder(x, y, 2)
-                for i in range(thread_count):
-                    lower = i*DivRem[0]
-                    upper = (i+1)*DivRem[0] - 1
-                    bounds.append([lower, upper])
-                if DivRem[1] > 0:
-                    # append the extra and add new thread
-                    thread_count += 1
-                    bounds.append([(self.tc+1)*DivRem[0] - 1, x*y-1 - 1])
             with CF.ThreadPoolExecutor(max_workers=thread_count) as exe:
                 if thread_count == 1:
                     futures = {exe.submit(
@@ -263,7 +248,7 @@ class LinkedLattice:
                 else:
                     futures = {exe.submit(
                         run_function,
-                        bound): bound for bound in bounds}
+                        bound): bound for bound in self.bounds}
                 if has_retval:
                     res = 0
                     for future in CF.as_completed(futures):
@@ -315,7 +300,8 @@ class LinkedLattice:
         x = self.Shape[0]
         y = self.Shape[1]
         if self.tc != 1:
-            DivRem = DividendRemainder(x, y, self.tc)
+            DivRem = DividendRemainder(x*y, self.tc)
+            # print(f'\nDivisor and Remainder = {DivRem}')
         if self.tc == 1:
             self.bounds.append([0, x*y-1])
         elif not ((DivRem[0] == 0) or (DivRem[0] == 1)):
