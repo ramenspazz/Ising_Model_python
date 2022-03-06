@@ -50,7 +50,10 @@ def DividendRemainder(dividend: int | Int,
     """
         Purpose
         -------
-        Returns a list with the dividend and remainder of (nm)/t.
+        Returns a list with the quotient and remainder of `dividend` / `divisor`.
+        I designed this to run in exponential jumps of the power of 2 using the
+        left bitshift operator, so it functions faster than the standard
+        implimentation of the remainder algorithm that I have seen.
         Runs in Omega(log(n)), Theta(n), O(nlog(n))
 
         Returns
