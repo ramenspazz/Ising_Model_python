@@ -51,16 +51,12 @@ def DividendRemainder(dividend: int | Int,
         Purpose
         -------
         Returns a list with the dividend and remainder of (nm)/t.
-        Runs in Theta(log(n)), Omega(n), O(nlog(n))
+        Runs in Omega(log(n)), Theta(n), O(nlog(n))
 
         Returns
         -------
-        Remainder : `int`
-            - Represents the remainder after division.
-
-        Dividend : `int`
-            - Represents a whole number p for n*m>=pt, where n, m, p, and t are
-            all integers.
+        [Quotient, Remainder] : `list`
+            - ``list` containing the integer quotient and remainder of division.
 
     """
     # Might be necessary but for now doesnt appear to be relavant for my use
