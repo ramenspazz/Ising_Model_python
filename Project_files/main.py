@@ -18,35 +18,12 @@ from getpass import getpass  # noqa E402
 import random as rnd  # noqa E402
 import DataAnalysis as DA  # noqa E402
 import warnings  # noqa E402
+from SupportingFunctions import generate_random, rand_time
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 # sys.setrecursionlimit(1000000)  # increase recursion limit
 
 
 zeroC = 273.15
-
-
-def rand_time() -> int:
-    out = int(dt.datetime.now().strftime('%s'))
-    sys.stdout.write(f"\nTime Seed = {out}\n")
-    return(int(dt.datetime.now().strftime('%s')))
-
-
-def generate_random(gen_num: int) -> list:
-    """
-        Generates 2 or 3 random numbers whos sum is 100
-    """
-    if gen_num == 2:
-        rand_a = rnd.randint(0, 100)
-        rand_b = 100 - rand_a
-        return([rand_a, rand_b])
-    elif gen_num == 3:
-        rand_a = rnd.randint(0, 98)
-        if rand_a == 0:
-            rand_b = rnd.randint(0, 99)
-        else:
-            rand_b = rnd.randint(0, 100-rand_a-1)
-        rand_c = 100 - rand_a - rand_b
-        return([rand_a, rand_b, rand_c])
 
 
 def main(*args, **kwargs) -> int:
@@ -141,7 +118,7 @@ def main(*args, **kwargs) -> int:
                 inF.print_stdout('Goodbye', end='\n')
                 exit()
 
-            relax_itt_num = 1000
+            relax_itt_num = 10000
             lt_c4v_up.relax(relax_itt_num, Beta[0])
             lt_c4v_up.update(set_state=True)
             lt_c3v_up.relax(relax_itt_num, Beta[0])

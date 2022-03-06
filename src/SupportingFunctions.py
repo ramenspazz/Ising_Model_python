@@ -4,19 +4,22 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
+import sys
 # Typing imports
 from typing import Optional
 # import matplotlib.pyplot as plt
-from numpy import int64, integer as Int, floating as Float, ndarray  # noqa E501
+from numpy import integer as Int, floating as Float, ndarray
 
 # Functions and Libraries
 from numba import njit
 import numpy as np
 import PrintException as PE
+import datetime as dt
+import random as rnd
 
-# ignore warning on line 138
-import warnings
-warnings.filterwarnings("ignore", category=RuntimeWarning)
+# # ignore warning for is comparison to -0.0
+# import warnings
+# warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 @njit
@@ -152,3 +155,27 @@ def Array_IsClose(A: ndarray | list,
         return(True)
     except Exception:
         PE.PrintException()
+
+
+def rand_time() -> int:
+    out = int(dt.datetime.now().strftime('%s'))
+    sys.stdout.write(f"Time Seed = {out}\n")
+    return(int(dt.datetime.now().strftime('%s')))
+
+
+def generate_random(gen_num: int) -> list:
+    """
+        Generates 2 or 3 random numbers whos sum is 100
+    """
+    if gen_num == 2:
+        rand_a = rnd.randint(0, 100)
+        rand_b = 100 - rand_a
+        return([rand_a, rand_b])
+    elif gen_num == 3:
+        rand_a = rnd.randint(0, 98)
+        if rand_a == 0:
+            rand_b = rnd.randint(0, 99)
+        else:
+            rand_b = rnd.randint(0, 100-rand_a-1)
+        rand_c = 100 - rand_a - rand_b
+        return([rand_a, rand_b, rand_c])
