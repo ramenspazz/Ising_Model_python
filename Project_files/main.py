@@ -28,16 +28,18 @@ zeroC = 273.15
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 50
-        M = 50
+        N = 32
+        M = 32
         size = [N, M]
-        total_time = 1000  # 4*math.trunc(np.sqrt(N*M))
-        J = 1  # eV
+        total_time = 1000
+        # for some reason I feel this value is smaller than it should be but
+        # it is giving me the expected graphs 0_o
+        J = 0.0000001  # eV interation energy <=> frequency*h in hz
         print(total_time)
-        a = T_to_Beta(-200+zeroC)
-        b = T_to_Beta(zeroC)
+        a = T_to_Beta(zeroC)
+        b = T_to_Beta(1400+zeroC)
         print(f'a={a}eV, b={b}eV')
-        num_points = 10
+        num_points = 100
         step = (b-a)/num_points
         Beta = np.arange(a, b, step)
 
@@ -118,7 +120,7 @@ def main(*args, **kwargs) -> int:
                 inF.print_stdout('Goodbye', end='\n')
                 exit()
 
-            relax_itt_num = 10000
+            relax_itt_num = 100
             lt_c4v_up.relax(relax_itt_num, Beta[0])
             lt_c4v_up.update(set_state=True)
             lt_c3v_up.relax(relax_itt_num, Beta[0])
@@ -158,7 +160,7 @@ def main(*args, **kwargs) -> int:
                 step = (b-a)/num_points
                 Beta = np.arange(a, b, step)  # noqa
 
-            lt_c4v_up.SpinEnergy(Beta, total_time, lt.MetropolisAlgorithm,
+            lt_c4v_up.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,
                                  save=auto_save, auto_plot=auto_plot)
 
             lt_c3v_up.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,

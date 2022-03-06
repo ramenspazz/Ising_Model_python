@@ -8,10 +8,9 @@ import sys
 # Typing imports
 from typing import Optional
 # import matplotlib.pyplot as plt
-from numpy import integer as Int, floating as Float, ndarray
+from numpy import int64, integer as Int, floating as Float, ndarray
 
 # Functions and Libraries
-from numba import njit
 import numpy as np
 import PrintException as PE
 import datetime as dt
@@ -22,7 +21,6 @@ import random as rnd
 # warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
-@njit
 def GetIndex(i: int, x_range: int) -> ndarray:
     """
         Returns
@@ -73,22 +71,21 @@ def DividendRemainder(dividend: int | Int,
         return([0, dividend])
     elif divisor == dividend:
         return([1, 0])
+    elif dividend % divisor == 0:
+        return([int64(dividend/divisor), 0])
 
-    test = np.int64(0)
-    div_power = np.int64(0)
-    quotient = np.int64(0)
-    prev = np.int64(0)
+    test = int64(0)
+    div_power = int64(0)
+    quotient = int64(0)
+    prev = int64(0)
     while True:
         test = (divisor << div_power) + (divisor * quotient)
 
-        if test == dividend:
-            return([2 << div_power + quotient, 0])
-
-        elif test > dividend and prev < dividend:
+        if test > dividend and prev < dividend:
             if prev + divisor > dividend:
                 return([quotient + (2 << div_power - 2), dividend - prev])
             quotient += 2 << (div_power - 2)
-            div_power = np.int64(0)
+            div_power = int64(0)
             prev = quotient * divisor
             continue
 

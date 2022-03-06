@@ -1,6 +1,6 @@
 # This file defines a queue made from a linked list
 from __future__ import annotations
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, TypedDict
 T = TypeVar('T')
 
 
@@ -40,6 +40,17 @@ class LLNode(Generic[T]):
         self.backward_link = back_link
 
 
+class DictData(TypedDict):
+    hash_val: int
+    data: T
+
+
+# The commented out lines are for the Wolff algorithm to run with spin
+# flipping of entire groups of LIKE spins only. This was a test case and
+# required me to check if a node was already in the queue or not.
+# Left in just in case anyone else needs this functionality at a very small
+# speed penelty. In my tests, calling IsInQueue only added (0.3 +/- 0.05)s per
+# 1000 itterations of the Wolff algorithm
 class LLQueue(Generic[T]):
     """
         A queue made from a linked list, operates on first in first out
@@ -49,11 +60,25 @@ class LLQueue(Generic[T]):
         self.head = None
         self.tail = None
         self.size = 0
+        # self.member_dict: DictData = DictData()
+
+    def __iter__(self):
+        return(self)
+
+    def __next__(self):
+        cur = self.head
+        while cur is not None:
+            yield(cur.get_data())
+            cur = cur.get_fore_link()
+    
+    def IsInQueue(self, item):
+        return(True if self.member_dict.get(hash(item)) else False)
 
     def push(self, item) -> None:
         """
             Push a value to the end of the queue.
         """
+        # self.member_dict[hash(item)] = item
         # queue is empty, create a new entry
         if self.size == 0:
             self.head = LLNode[T](item, None, None)
@@ -77,13 +102,12 @@ class LLQueue(Generic[T]):
         """
         if self.size == 0:
             raise QueueEmpty
-        elif self.size == 1:
+        if self.size == 1:
             ret_val = self.head.get_data()
             del self.head
             self.head = None
             self.tail = None
             self.size -= 1
-            return(ret_val)
         else:
             ret_val = self.head.get_data()
             temp = self.head
@@ -91,4 +115,5 @@ class LLQueue(Generic[T]):
             self.head.set_back_link(None)
             del temp
             self.size -= 1
-            return(ret_val)
+        # self.member_dict.pop(hash(ret_val))
+        return(ret_val)

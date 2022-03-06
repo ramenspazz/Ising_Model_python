@@ -369,13 +369,14 @@ class LatticeDriver:
             if self.SumThreadsAlive is False and relax_call is False:
                 self.__LaunchSumThreads__()
             if initial_energy is not None:
-                cur_itt_energy = initial_energy
+                cur_itt_energy = initial_energy*beta*self.J
             else:
                 cur_itt_energy = np.float64(0)
             netSE_mtx = self.ZERO_mtx
             node_q = LLQueue[Node]()
             for itt_num in range(times):
                 # pick random point
+                # was_seen = LLQueue[Node]()
                 while True:
                     # pick random point on array and flip spin
                     # randint is very slow so dont use it when you need to
@@ -389,14 +390,17 @@ class LatticeDriver:
                         continue
                     else:
                         node_q.push(select_node)
+                        # was_seen.push(select_node)
                         break
                 try:
                     while True:
                         cur_node = node_q.pop()
                         # check neighbors
                         for nbr in cur_node:
-                            if nbr.get_spin == 0:
+                            if (nbr.get_spin == 0): 
+                                # or was_seen.IsInQueue(nbr) is True):
                                 continue
+                            # was_seen.push(nbr)
                             nbrs_Energy = 0
                             for Enbr in nbr:
                                 nbrs_Energy += Enbr.get_spin()
@@ -408,7 +412,6 @@ class LatticeDriver:
                                 cur_itt_energy += dE
                                 nbr.flip_spin()
                                 node_q.push(nbr)
-                                # get magnitization
                 except QueueEmpty:
                     # exit while loop when queue is empty
                     pass

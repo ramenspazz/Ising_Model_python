@@ -10,7 +10,6 @@ from typing import Optional
 from numpy.typing import NDArray
 from numpy import int64, int8, integer as Int, floating as Float, ndarray  # noqa E501
 # Functions and Libraries
-from numba import njit
 import numpy as np
 import PrintException as PE
 
@@ -59,7 +58,6 @@ class Node:
         except Exception:
             PE.PrintException()
 
-    @njit
     def __len__(self):
         return(len(self.links))
 
