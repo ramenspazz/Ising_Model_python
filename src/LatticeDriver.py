@@ -17,6 +17,7 @@ from numpy import array
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from sympy import Q
 import LinkedLattice as lc
 import DataAnalysis as DA
 import random
@@ -30,17 +31,20 @@ import MLTPQueue as MLTPqueue
 
 from WaitListLock import WaitListLock
 from pyQueue import LLQueue, QueueEmpty
+from pyQueueWithDict import DictQueue
+
+# from scipy.constants import Boltzmann as k_boltzmann
 
 GNum = Union[number, Number]
-k_boltzmann = float64(8.617333262145E-05)  # eV / K
+k_boltzmann = float64(8.617333262E-05)  # eV / K
 
 
 def T_to_Beta(beta: float64) -> float64:
-    return np.round(float64(1 / (k_boltzmann * beta)), 6)
+    return(float64(1 / (k_boltzmann * beta)))
 
 
 def Beta_to_T(T: float64) -> float64:
-    return np.round(float64(1 / (k_boltzmann * T)), 6)
+    return(float64(1 / (k_boltzmann * T)))
 
 
 class LatticeDriver:
@@ -102,19 +106,29 @@ class LatticeDriver:
                     self.LinkedLat: lc.LinkedLattice = lc.LinkedLattice(
                         scale, Lshape, J, basis_arr=None)
             self.ZERO_mtx: ndarray = np.zeros([self.time, 2])
-            # Multithreading declarations
+            # Multithreading sum declarations
             self.qsize = self.LinkedLat.tc
             self.result_queue_sum = MLTPqueue.ThQueue(self.qsize)
             self.ready_sum = WaitListLock(self.qsize)
             self.finished_sum = mltp.Event()
             self.thread_pool_sum: list[mltp.Process] = []
             self.SumThreadsAlive = False
-
+            # multithreading energy declarations
             self.result_queue_energy = MLTPqueue.ThQueue(self.qsize)
             self.ready_energy = WaitListLock(self.qsize)
             self.finished_energy = mltp.Event()
             self.thread_pool_energy: list[mltp.Process] = []
             self.EnergyThreadsAlive = False
+            # multithreading path declarations
+            # TODO must fix C3V, but testing goes on
+            self.cluster_queue = MLTPqueue.ThQueue()
+            self.work_queue_path = MLTPqueue.ThQueue()
+            self.ready_path = WaitListLock()
+            self.finished_path = mltp.Event()
+            self.thread_pool_path: list[mltp.Process] = []
+            self.PathThreadsAlive = False
+
+
         except Exception:
             PE.PrintException()
 
@@ -142,12 +156,27 @@ class LatticeDriver:
             self.thread_pool_energy[th_num].start()
         self.EnergyThreadsAlive = True
 
+    def __LaunchPathThreads__(self):
+        for th_num in range(self.qsize):
+            self.thread_pool_path.append(mltp.Process(
+                target=self.LinkedLat.Path_Worker,
+                args=(th_num,
+                      self.
+                      self.ready_energy,
+                      self.finished_energy)))
+            self.thread_pool_energy[th_num].start()
+        self.EnergyThreadsAlive = True
+
     def __StopSumThreads__(self):
         if self.SumThreadsAlive is True:
             self.finished_sum.set()
             self.ready_sum.Start_Threads()
             for t in self.thread_pool_sum:
                 t.join()
+        self.thread_pool_sum.clear()
+        # reset events
+        self.finished_sum.clear()
+        self.SumThreadsAlive = False
 
     def __StopEnergyThreads__(self):
         if self.EnergyThreadsAlive is True:
@@ -155,6 +184,10 @@ class LatticeDriver:
             self.ready_energy.Start_Threads()
             for t in self.thread_pool_energy:
                 t.join()
+        self.thread_pool_energy.clear()
+        # reset events
+        self.finished_energy.clear()
+        self.EnergyThreadsAlive = False
 
     def __reformMTX__(self):
         self.ZERO_mtx: ndarray = np.zeros([self.time, 2])
@@ -231,12 +264,11 @@ class LatticeDriver:
         return(cur_itt_energy)
 
     def reset(self) -> None:
-        if self.first_run is not True:
-            for i, node in enumerate(
-                    self.LinkedLat.range(0,
-                                         self.LinkedLat.Shape[0] *
-                                         self.LinkedLat.Shape[1])):
-                node.set_spin(self.saved_config[i])
+        for i, node in enumerate(
+                self.LinkedLat.range(0,
+                                     self.LinkedLat.Shape[0] *
+                                     self.LinkedLat.Shape[1])):
+            node.set_spin(self.saved_config[i])
         return
 
     def update(self, set_state=False) -> None:
@@ -290,7 +322,8 @@ class LatticeDriver:
             beta,
             initial_energy: Optional[float64] = None,
             spinenergy_call: Optional[bool] = False,
-            relax_call: Optional[bool] = False) -> ndarray | None:
+            relax_call: Optional[bool] = False,
+            plot: Optional[bool] = False) -> ndarray | None:
         """
             Purpose
             -------
@@ -300,13 +333,23 @@ class LatticeDriver:
         """
         try:
             if self.SumThreadsAlive is False and relax_call is False:
+                if np.array_equiv(self.ZERO_mtx.shape,
+                              np.array([times, 2])) is False:
+                    self.set_time(times)
                 self.__LaunchSumThreads__()
             if initial_energy is not None:
                 cur_itt_energy = initial_energy
             else:
                 cur_itt_energy = np.float64(0)
+            if spinenergy_call is False:
+                inF.print_stdout(
+                    "MetropolisAlgorithm is 000.0% \complete...")
             netSE_mtx = self.ZERO_mtx
             for itt_num in range(times):
+                if spinenergy_call is False:
+                    inF.print_stdout(
+                        f"MetropolisAlgorithm is {100 * itt_num/times:.2f}%"
+                        f" complete...")
                 # select spins to flip
                 while True:
                     # pick random point on array and flip spin
@@ -327,11 +370,11 @@ class LatticeDriver:
                     if neighbor.get_spin() == 0:
                         continue
                     nbrs_Energy += neighbor.get_spin()
-                dE = 2 * S_i * nbrs_Energy
-                if dE < 0:
+                dE = 2 * S_i * nbrs_Energy * self.J
+                if dE > 0 and random.random() < np.exp(-beta*dE):
                     cur_itt_energy += dE
                     node_i.flip_spin()
-                elif random.uniform(0, 1) > np.exp(-beta*dE):
+                if dE <= 0:
                     cur_itt_energy += dE
                     node_i.flip_spin()
 
@@ -342,12 +385,15 @@ class LatticeDriver:
                     netSE_mtx[itt_num, 1] = cur_itt_energy
             # for itt_num in range(times): end
             if spinenergy_call is False:
+                    inF.print_stdout(
+                        f"MetropolisAlgorithm is 100% complete...")
+            if spinenergy_call is False:
                 self.__StopSumThreads__()
+            if plot is True:
+                self.PlotItterations(netSE_mtx, beta, save=False,
+                                     auto_plot=True)
             if relax_call is False:
                 return(netSE_mtx)
-            # if quiet is False:
-            #     self.plot_metrop(netSE_mtx, Beta, save=save,
-            #                      auto_plot=auto_plot)
         except KeyboardInterrupt:
             print('\nKeyboard Inturrupt, exiting...\n')
             self.__StopEnergyThreads__()
@@ -361,22 +407,35 @@ class LatticeDriver:
                        beta,
                        initial_energy: Optional[float64] = None,
                        spinenergy_call: Optional[bool] = False,
-                       relax_call: Optional[bool] = False) -> ndarray | None:
+                       relax_call: Optional[bool] = False,
+                       plot: Optional[bool] = False) -> ndarray | None:
         """
             TODO : write docstring
         """
         try:
             if self.SumThreadsAlive is False and relax_call is False:
+                if np.array_equiv(self.ZERO_mtx.shape,
+                              np.array([times, 2])) is False:
+                    self.set_time(times)
                 self.__LaunchSumThreads__()
             if initial_energy is not None:
-                cur_itt_energy = initial_energy*beta*self.J
+                cur_itt_energy = initial_energy
             else:
                 cur_itt_energy = np.float64(0)
+            if spinenergy_call is False:
+                inF.print_stdout(
+                    "WolffAlgorithm is 000.0% \complete...")
             netSE_mtx = self.ZERO_mtx
             node_q = LLQueue[Node]()
+            cluster = LLQueue[Node]()
+            was_seen = dict()
+            balcond = 1-np.exp(-2*beta*self.J, dtype=np.float64)
             for itt_num in range(times):
+                if spinenergy_call is False:
+                    inF.print_stdout(
+                        f"WolffAlgorithm is {100 * itt_num/times:.2f}%"
+                        f" complete...")
                 # pick random point
-                # was_seen = LLQueue[Node]()
                 while True:
                     # pick random point on array and flip spin
                     # randint is very slow so dont use it when you need to
@@ -385,33 +444,32 @@ class LatticeDriver:
                                         (self.Lshape[0] - 1)),
                                         math.trunc((random.random()) *
                                         (self.Lshape[1] - 1))])
-                    select_node = self[rand_xy]
-                    if select_node.get_spin() == 0:
+                    rand_node = self[rand_xy]
+                    if rand_node.get_spin() == 0:
                         continue
                     else:
-                        node_q.push(select_node)
-                        # was_seen.push(select_node)
-                        break
+                        # was_seen.clear()
+                        # was_seen[rand_node] = rand_node
+                        # node_q.push(rand_node)
+                        # break
+                        break 
+                # push neighbors of the random node to the work queue
+                for nbr in rand_node:
+                    if (nbr.get_spin() == 0 or
+                        nbr.get_spin() != rand_node.get_spin()):
+                        continue
+                    self.work_queue_path.put(nbr)
+                # wait for cluster to be generated
+                self.ready_path.Check()
                 try:
+                    # evaluate energy change path integral
+                    cur = cluster.pop()
                     while True:
-                        cur_node = node_q.pop()
-                        # check neighbors
-                        for nbr in cur_node:
-                            if (nbr.get_spin == 0): 
-                                # or was_seen.IsInQueue(nbr) is True):
-                                continue
-                            # was_seen.push(nbr)
-                            nbrs_Energy = 0
-                            for Enbr in nbr:
-                                nbrs_Energy += Enbr.get_spin()
-                            dE = -2*nbr.flip_test()*nbrs_Energy*beta*self.J
-                            balcond = 1 - np.exp(dE, dtype=np.float64)
-
-                            if (nbr.get_spin() == -cur_node.get_spin()
-                                    and random.random() < balcond):
-                                cur_itt_energy += dE
-                                nbr.flip_spin()
-                                node_q.push(nbr)
+                        nbr_sum = float64(0)
+                        for nbr in cur:
+                            nbr_sum += nbr.get_spin()
+                        cur_itt_energy += nbr_sum*cur.flip_spin()*self.J
+                        cur = cluster.pop()
                 except QueueEmpty:
                     # exit while loop when queue is empty
                     pass
@@ -421,7 +479,13 @@ class LatticeDriver:
                     netSE_mtx[itt_num, 1] = cur_itt_energy
             # for itt_num in range(times): end
             if spinenergy_call is False:
+                    inF.print_stdout(
+                        f"WolffAlgorithm is 100% complete...")
+            if spinenergy_call is False:
                 self.__StopSumThreads__()
+            if plot is True:
+                self.PlotItterations(netSE_mtx, beta, save=False,
+                                     auto_plot=True)
             if relax_call is False:
                 return(netSE_mtx)
         except Exception:
@@ -475,10 +539,12 @@ class LatticeDriver:
 
             self.__LaunchEnergyThreads__()
             start_time = time.time()
-            initial_energy = self.GetEnergy()
+            initial_energy = self.GetEnergy()*self.J
             self.__StopEnergyThreads__()
+            # print(f'\nInitial Energy is {initial_energy}')
 
             for i, beta in enumerate(Beta):
+                self.LinkedLat.beta_cur = beta
                 inF.print_stdout(
                     f"get_spin_energy is {100 * i / len(Beta) :.1f}%"
                     f" complete...")
@@ -493,8 +559,8 @@ class LatticeDriver:
                     spinenergy_call=True)
 
                 magnitization[i] = DA.data_mean(netSE_mtx[-times:, 0])
-                E_mean[i] = DA.data_mean(netSE_mtx[-times:, 1] / self.J)
-                E_std[i] = DA.std_dev(netSE_mtx[-times:, 1]/self.J, E_mean[i])
+                E_mean[i] = DA.data_mean(netSE_mtx[-times:, 1])
+                E_std[i] = DA.std_dev(netSE_mtx[-times:, 1], E_mean[i])
             # for i, beta in enumerate(Beta): end
 
             self.__StopSumThreads__()
@@ -519,12 +585,12 @@ class LatticeDriver:
         except Exception:
             PE.PrintException()
 
-    def plot_metrop(self, SE_mtx: ndarray,
-                    Beta: list | ndarray,
-                    times: Optional[int] = None,
-                    quiet: Optional[bool] = True,
-                    save: Optional[bool] = False,
-                    auto_plot: Optional[bool] = True) -> None:
+    def PlotItterations(self, SE_mtx: ndarray,
+                       Beta: list | ndarray,
+                       times: Optional[int] = None,
+                       quiet: Optional[bool] = True,
+                       save: Optional[bool] = False,
+                       auto_plot: Optional[bool] = True) -> None:
         """
         Parameters
         ----------
@@ -612,14 +678,16 @@ class LatticeDriver:
         else:
             rots = self.LinkedLat.rots
 
-        BJ = np.multiply(Beta, self.J)  # in eV / K
-        Cv = np.zeros(len(BJ))
-        for i in range(len(BJ)):
-            Cv[i] = E_std[i]**2 * BJ[i] * k_boltzmann
-
-        temps = np.zeros(len(BJ))
-        for i in range(len(BJ)):
+        # BJ = np.multiply(Beta, self.J)
+        temps = np.zeros(len(Beta))
+        for i in range(len(Beta)):
             temps[i] = Beta_to_T(Beta[i])
+
+        Cv = np.zeros(len(Beta))
+        for i in range(len(Beta)):
+            # print(f'E_std[[{i}] = {E_std[i]}')
+            Cv[i] = E_std[i]**2 / (k_boltzmann * temps[i]**2)
+
 
         fig.layout.title = (f'Spin energy realtions plot,'
                             f' C{rots}V')
@@ -628,12 +696,12 @@ class LatticeDriver:
         yname2 = 'Heat Capacity (eV/K)'
         fig.add_trace(go.Scatter(x=temps, y=magnitization/len(self),
                                  mode='lines+markers'), row=1, col=1)
-        fig.update_xaxes(title_text=xname, type='log', row=1, col=1)
+        fig.update_xaxes(title_text=xname, row=1, col=1)
         fig.update_yaxes(title_text=yname1, row=1, col=1)
         fig.add_trace(
             go.Scatter(x=temps, y=Cv, mode='lines+markers'),
             row=1, col=2)
-        fig.update_xaxes(title_text=xname, type='log', row=1, col=2)
+        fig.update_xaxes(title_text=xname, row=1, col=2)
         fig.update_yaxes(title_text=yname2, row=1, col=2)
         if save is True:
             fname = ('SpinEnergy' + str(self.Lshape) + '_' +
@@ -698,6 +766,7 @@ class LatticeDriver:
                                  " you\'re just reaaaaaally unlucky.")
             # setup internal display of lattice
             self.update()
+            self.update(set_state=True)
             return(None)
         except Exception:
             PE.PrintException()

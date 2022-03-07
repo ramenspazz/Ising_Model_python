@@ -19,6 +19,7 @@ import random as rnd  # noqa E402
 import DataAnalysis as DA  # noqa E402
 import warnings  # noqa E402
 from SupportingFunctions import generate_random, rand_time
+from scipy.constants import hbar
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 # sys.setrecursionlimit(1000000)  # increase recursion limit
 
@@ -34,12 +35,13 @@ def main(*args, **kwargs) -> int:
         total_time = 1000
         # for some reason I feel this value is smaller than it should be but
         # it is giving me the expected graphs 0_o
-        J = 0.0000001  # eV interation energy <=> frequency*h in hz
-        print(total_time)
-        a = T_to_Beta(zeroC)
-        b = T_to_Beta(1400+zeroC)
-        print(f'a={a}eV, b={b}eV')
-        num_points = 100
+        J = 1  # eV interation energy <=> frequency*h in hz
+        T1 = zeroC
+        T2 = 100+zeroC
+        a = T_to_Beta(T1)
+        b = T_to_Beta(T2)
+        print(f'a={a}/eV, b={b}/eV')
+        num_points = 10
         step = (b-a)/num_points
         Beta = np.arange(a, b, step)
 
@@ -75,13 +77,13 @@ def main(*args, **kwargs) -> int:
                 # DOCtest seed = 1644121893
                 # good seed 1644144314
                 seed = 1644121893
-                lt_c4v_up.randomize(voids=True, probs=[45, 50, 5],
+                lt_c4v_up.randomize(voids=True, probs=[15, 80, 5],
                                     rand_seed=seed)
-                lt_c3v_up.randomize(voids=False, probs=[50, 50],
+                lt_c3v_up.randomize(voids=False, probs=[20, 80],
                                     rand_seed=seed)
-                lt_c6v_up.randomize(voids=True, probs=[49, 41, 10],
+                lt_c6v_up.randomize(voids=True, probs=[15, 80, 5],
                                     rand_seed=seed)
-                lt_c4v_dn.randomize(voids=True, probs=[53, 42, 5],
+                lt_c4v_dn.randomize(voids=True, probs=[80, 15, 5],
                                     rand_seed=seed)
                 lt_c3v_dn.randomize(voids=False, probs=[80, 20],
                                     rand_seed=seed)
@@ -120,19 +122,20 @@ def main(*args, **kwargs) -> int:
                 inF.print_stdout('Goodbye', end='\n')
                 exit()
 
-            relax_itt_num = 100
-            lt_c4v_up.relax(relax_itt_num, Beta[0])
-            lt_c4v_up.update(set_state=True)
-            lt_c3v_up.relax(relax_itt_num, Beta[0])
-            lt_c3v_up.update(set_state=True)
-            lt_c6v_up.relax(relax_itt_num, Beta[0])
-            lt_c6v_up.update(set_state=True)
-            lt_c4v_dn.relax(relax_itt_num, Beta[0])
-            lt_c4v_dn.update(set_state=True)
-            lt_c3v_dn.relax(relax_itt_num, Beta[0])
-            lt_c3v_dn.update(set_state=True)
-            lt_c6v_dn.relax(relax_itt_num, Beta[0])
-            lt_c6v_dn.update(set_state=True)
+            # relax_itt_num = 100
+            # relax_beta = 0
+            # lt_c4v_up.relax(relax_itt_num, relax_beta)
+            # lt_c4v_up.update(set_state=True)
+            # lt_c3v_up.relax(relax_itt_num, relax_beta)
+            # lt_c3v_up.update(set_state=True)
+            # lt_c6v_up.relax(relax_itt_num, relax_beta)
+            # lt_c6v_up.update(set_state=True)
+            # lt_c4v_dn.relax(relax_itt_num, relax_beta)
+            # lt_c4v_dn.update(set_state=True)
+            # lt_c3v_dn.relax(relax_itt_num, relax_beta)
+            # lt_c3v_dn.update(set_state=True)
+            # lt_c6v_dn.relax(relax_itt_num, relax_beta)
+            # lt_c6v_dn.update(set_state=True)
 
             if auto_plot is True:
                 lt_c4v_up.plot()
@@ -143,22 +146,60 @@ def main(*args, **kwargs) -> int:
                 lt_c6v_dn.plot()
 
             inF.print_stdout(
-                f"Temperature range= [{Beta_to_T(a)},{Beta_to_T(b)}]Kelvin."
+                f"Temperature range= [{T1},{T2}]Kelvin."
                 f" Number of sample points in the range = {num_points}."
                 " Change (y/n)? ")
 
             output = inF.key_input(['y', 'n'])
 
             if output == 'y':
-                # TODO probably use a different function other than getpass
-                inF.print_stdout('a = ')
-                a = T_to_Beta(float(getpass('')))
-                inF.print_stdout('b = ')
-                b = T_to_Beta(float(getpass('')))
-                inF.print_stdout('step = ')
-                num_points = float(getpass(''))
+                print('y\n')
+                T1 = float(input('T1 = '))
+                T2 = float(input('T2 = '))
+                num_points = float(input('number of sample points = '))
+                a = T_to_Beta(T1)
+                b = T_to_Beta(T2)
                 step = (b-a)/num_points
-                Beta = np.arange(a, b, step)  # noqa
+                Beta = np.arange(a, b, step)
+
+            # lt_c4v_up.__LaunchEnergyThreads__()
+            # init_energy1 = lt_c4v_up.GetEnergy()*J
+            # lt_c4v_up.__StopEnergyThreads__()
+
+            # lt_c3v_up.__LaunchEnergyThreads__()
+            # init_energy2 = lt_c3v_up.GetEnergy()*J
+            # lt_c3v_up.__StopEnergyThreads__()
+
+            # lt_c6v_up.__LaunchEnergyThreads__()
+            # init_energy3 = lt_c6v_up.GetEnergy()*J
+            # lt_c6v_up.__StopEnergyThreads__()
+
+            # lt_c4v_dn.__LaunchEnergyThreads__()
+            # init_energy4 = lt_c4v_dn.GetEnergy()*J
+            # lt_c4v_dn.__StopEnergyThreads__()
+
+            # lt_c3v_dn.__LaunchEnergyThreads__()
+            # init_energy5 = lt_c3v_dn.GetEnergy()*J
+            # lt_c3v_dn.__StopEnergyThreads__()
+
+
+            # lt_c6v_dn.__LaunchEnergyThreads__()
+            # init_energy6 = lt_c6v_dn.GetEnergy()*J
+            # lt_c6v_dn.__StopEnergyThreads__()
+            
+
+            # lt_c4v_up.update(set_state=True)
+            # print(init_energy)
+            # lt_c4v_up.WolffAlgorithm(100000, Beta[0], initial_energy=init_energy,
+            #                          spinenergy_call=False,
+            #                          plot=True)
+            # print('preforming WolffAlgorithm...\n')
+            # inF.print_stdout('Reseting...')
+            # lt_c4v_up.reset()
+            # inF.print_stdout('Reset Complete!', end='\n')
+            # lt_c4v_up.MetropolisAlgorithm(10000, Beta[0], initial_energy=init_energy,
+            #                          spinenergy_call=False,
+            #                          plot=True)
 
             lt_c4v_up.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,
                                  save=auto_save, auto_plot=auto_plot)

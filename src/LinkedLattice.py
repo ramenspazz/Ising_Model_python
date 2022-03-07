@@ -4,6 +4,7 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
+from random import random
 # Typing imports
 from typing import Optional, TypedDict, Union, Callable
 from numbers import Number
@@ -29,6 +30,7 @@ import MLTPQueue as MLTPqueue
 import warnings
 
 from WaitListLock import WaitListLock
+from pyQueue import LLQueue
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -71,6 +73,7 @@ class LinkedLattice:
         """
         self.lock = RLock()
         self.J = J
+        self.beta_cur: float64 = None
         self.scale_factor: Float = scale_factor
         self.node_dict: CoordinateDict = {}
         self.cord_dict: CoordinateDict = {}
@@ -419,6 +422,34 @@ class LinkedLattice:
                     psum += nbr.get_spin()
                 SE_vec[1] += -psum * node.get_spin()
             result_queue.put_nowait(SE_vec)
+        return
+
+    def Path_Worker(self,
+                    thread_num: int,
+                    work_queue_path: MLTPqueue.ThQueue,
+                    cluster: LLQueue,
+                    was_seen: dict[Node, Node],
+                    ready_path: WaitListLock,
+                    finished_path: mltp._EventType):
+        while True:
+            ready_path.Wait()
+            if finished_path.is_set is True:
+                break
+            balcond = 1-np.exp(-2*self.beta_cur*self.J, dtype=np.float64)
+            while True:
+                cur_node: Node = work_queue_path.get(timeout=0.1)
+                if cur_node is None:
+                    break
+                for nbr in cur_node:
+                    if (nbr.get_spin() == 0 or
+                        was_seen.get(nbr) is not None):
+                        continue
+                    was_seen[nbr] = nbr
+                    rand_num = random()
+                    if (nbr.get_spin() == cur_node.get_spin()
+                            and rand_num < balcond):
+                        work_queue_path.put(nbr)
+                        cluster.push(nbr)
         return
 
     def append(self,
