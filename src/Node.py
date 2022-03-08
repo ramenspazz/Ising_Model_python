@@ -153,7 +153,7 @@ class Node:
     def set_spin(self, spin) -> None:
         self.spin_state = spin
 
-    def flip_spin(self):
+    def flip_spin(self) -> int:
         """
             Purpose
             -------
@@ -162,13 +162,13 @@ class Node:
         """
         try:
             if self.get_spin() == 0:
-                return
+                return(0)
             elif self.get_spin() == 1:
                 self.spin_state = -1
-                return
+                return(-1)
             elif self.get_spin() == -1:
                 self.spin_state = 1
-                return
+                return(1)
         except Exception:
             PE.PrintException()
 

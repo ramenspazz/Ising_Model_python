@@ -4,6 +4,10 @@ Author: Ramenspazz
 This file defines the Node class and the LinkedLattice class.
 """
 from __future__ import annotations
+from queue import Empty
+from random import random
+from time import sleep
+# from random import random
 # Typing imports
 from typing import Optional, TypedDict, Union, Callable
 from numbers import Number
@@ -29,6 +33,7 @@ import MLTPQueue as MLTPqueue
 import warnings
 
 from WaitListLock import WaitListLock
+from pyQueue import LLQueue, QueueEmpty  # noqa
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -69,33 +74,36 @@ class LinkedLattice:
                 A `2x2` numpy 'array' of `floats`. Defaults to standard R2
                 Euclidean basis if no basis is specified.
         """
-        self.lock = RLock()
-        self.J = J
-        self.scale_factor: Float = scale_factor
-        self.node_dict: CoordinateDict = {}
-        self.cord_dict: CoordinateDict = {}
-        self.num_nodes: int = int(0)
-        self.num_voids: int = int(0)
-        self.origin_node: Node = Node([0, 0], [0, 0])
-        self.Shape = __shape
-        self.b1_plus_b2_len: float = None
-        self.nbrs_list: list[list[ndarray]] = list()
-        self.visited = list()
-        self._sum: int | Int = int(0)
-        self.rots = 0
-        self.basis_arr = basis_arr
-        self.bounds: list = []
-        if threads is None:
-            self.tc = mltp.cpu_count()  # threadcount
-        else:
-            self.tc = threads
-        self.setup_basis(basis_arr)
-        self.setup_multithreading()
-        self.__calcneighbor__()
-        inF.print_stdout('Generating structure...')
-        self.__threadlauncher__(self.__generation_worker__, False,
-                                generate_call=True)
-        inF.print_stdout('Generation complete!', end='\n')
+        try:
+            self.lock = RLock()
+            self.J = J
+            self.scale_factor: Float = scale_factor
+            self.node_dict: CoordinateDict = {}
+            self.cord_dict: CoordinateDict = {}
+            self.num_nodes: int = int(0)
+            self.num_voids: int = int(0)
+            self.origin_node: Node = Node([0, 0], [0, 0])
+            self.Shape = __shape
+            self.b1_plus_b2_len: float = None
+            self.nbrs_list: list[list[ndarray]] = list()
+            self.visited = list()
+            self._sum: int | Int = int(0)
+            self.rots = 0
+            self.basis_arr = basis_arr
+            self.bounds: list = []
+            if threads is None:
+                self.tc = mltp.cpu_count()  # threadcount
+            else:
+                self.tc = threads
+            self.setup_basis(basis_arr)
+            self.setup_multithreading()
+            self.__calcneighbor__()
+            inF.print_stdout('Generating structure...')
+            self.__threadlauncher__(self.__generation_worker__, False,
+                                    generate_call=True)
+            inF.print_stdout('Generation complete!', end='\n')
+        except Exception:
+            PE.PrintException()
 
     def __calcneighbor__(self) -> None:
         """
@@ -419,6 +427,46 @@ class LinkedLattice:
                     psum += nbr.get_spin()
                 SE_vec[1] += -psum * node.get_spin()
             result_queue.put_nowait(SE_vec)
+        return
+
+    def Path_Worker(self,
+                    thread_num: int,
+                    cluster: MLTPqueue.ThQueue,
+                    work_queue_path: MLTPqueue.ThQueue,
+                    result_queue: MLTPqueue.ThQueue,
+                    was_seen: dict[Node, Node],
+                    ready_path: WaitListLock[float],
+                    finished_path: mltp._EventType):
+        """
+            Purpose
+            -------
+            This thread worker selects a cluster of spins to be flipped.
+        """
+        while True:
+            balcond = ready_path.Wait(thread_num)
+
+            if finished_path.is_set() is True:
+                break
+            while True:
+                # get node from work queue
+                try:
+                    cur = self[work_queue_path.get(block=False, timeout=0.1)]
+                except Empty:
+                    # break loop when stack is empty or timeout
+                    break
+                for nbr in cur:
+                    if (nbr.get_spin() != cur.get_spin() or
+                            nbr.get_spin() == 0) or (
+                            was_seen.get(cur) is not None):
+                        # skip to next neighbor if the current neighbor is a
+                        # void or has the opposite sign of spin, or was
+                        # previously processed in the was_seen dict.
+                        continue
+                    was_seen[cur] = cur
+                    if random() < balcond:
+                        cluster.put(nbr.get_index())
+                        work_queue_path.put(nbr.get_index())
+            result_queue.put_nowait(1)
         return
 
     def append(self,
