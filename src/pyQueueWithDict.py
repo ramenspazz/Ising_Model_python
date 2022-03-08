@@ -73,8 +73,8 @@ class DictQueue(Generic[T]):
 
     def __len__(self):
         return(self.size)
-    
-    def IsInQueue(self, item):
+
+    def InQueue(self, item):
         return(True if self.member_dict.get(hash(item)) is not None else False)
 
     def clear(self):

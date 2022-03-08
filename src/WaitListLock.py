@@ -1,9 +1,10 @@
 import multiprocessing as mltp
 from MLTPQueue import ThQueue
-from typing import Optional
+from typing import Optional, TypeVar, Generic
+T = TypeVar('T')
 
 
-class WaitListLock:
+class WaitListLock(Generic[T]):
     """
         Defines a thread syncronization object that can wait and syncronisly
         start threads.
@@ -16,14 +17,15 @@ class WaitListLock:
     def __getitem__(self, i: int) -> ThQueue:
         return(self.ListLock[i])
 
-    def Wait(self, i: int) -> None:
+    def Wait(self, i: int) -> None | T:
         self.WaitLock[i].put_nowait(1)
-        self.ListLock[i].get(block=True)
+        retval = self.ListLock[i].get(block=True)
+        return(retval)
 
     def Check(self) -> None:
         for item in self.WaitLock:
             item.get(block=True)
 
-    def Start_Threads(self) -> None:
+    def Start_Threads(self, push_val: Optional[T | int] = 1) -> None:
         for q_item in self.ListLock:
-            q_item.put_nowait(1)
+            q_item.put_nowait(push_val)

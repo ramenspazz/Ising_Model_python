@@ -2,7 +2,10 @@
 from __future__ import annotations
 from multiprocessing import RLock
 from threading import Lock
-from typing import TypeVar, Generic, TypedDict
+from time import time
+from typing import Optional, TypeVar, Generic, TypedDict
+import gc
+gc.disable()
 T = TypeVar('T')
 
 
@@ -18,6 +21,21 @@ class QueueEmpty(Exception):
             return(f'QueueEmpty, {self.message} ')
         else:
             return('QueueEmpty has been raised ')
+
+
+class ItemAvailable(Exception):
+    """
+        Exception raised when LLQueue.pop is called and the Queue is empty,
+        but item becomes available when waiting.
+    """
+    def __init__(self, *args):
+        self.message = args[0] if args else None
+
+    def __str__(self):
+        if self.message is not None:
+            return(f'ItemAvailable, {self.message} ')
+        else:
+            return('ItemAvailable has been raised ')
 
 
 class LLNode(Generic[T]):
@@ -56,8 +74,11 @@ class DictData(TypedDict):
 class LLQueue(Generic[T]):
     """
         A queue made from a linked list, operates on first in first out
-        principal. Impliments locks to make `push`, `pop`, and `__len__` thread safe.
+        principal. Impliments locks to make `push`, `pop`, and `__len__`
+        thread safe.
     """
+    class_ref = None
+
     def __init__(self):
         self.head = None
         self.tail = None
@@ -69,11 +90,11 @@ class LLQueue(Generic[T]):
         return(self)
 
     def __next__(self):
-        with self.rlock:
-            cur = self.head
-            while cur is not None:
-                yield(cur.get_data())
-                cur = cur.get_fore_link()
+        # with self.rlock:
+        cur = self.head
+        while cur is not None:
+            yield(cur.get_data())
+            cur = cur.get_fore_link()
 
     def __len__(self):
         with self.lock:
@@ -99,15 +120,29 @@ class LLQueue(Generic[T]):
                 self.tail.set_fore_link(new_node)
                 self.tail = new_node
                 self.size += 1
+        # print(f'size of {self} is now {self.size}')
 
-    def pop(self) -> T:
+    def pop(self, timeout: Optional[float] = 0) -> T:
         """
             Remove an item from the front of the queue and return it. If the
-            queue is empty, raise `pyQueue`.`QueueEmpty` Exception.
+            queue is empty and timeout is not set, raise `pyQueue`.`QueueEmpty`
+            Exception, else return None if timeout is > 0.
         """
         with self.lock:
-            if self.size == 0:
-                raise QueueEmpty
+            try:
+                if self.size == 0:
+                    if timeout == 0:
+                        raise QueueEmpty
+                    else:
+                        t_start = time()
+                        now = time()
+                        while now - t_start < timeout:
+                            now = time()
+                            if self.size > 0:
+                                raise ItemAvailable
+                        raise QueueEmpty
+            except ItemAvailable:
+                pass
             if self.size == 1:
                 ret_val = self.head.get_data()
                 del self.head

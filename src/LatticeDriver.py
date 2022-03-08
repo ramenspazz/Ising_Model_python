@@ -5,6 +5,7 @@ This file defines the simulation lattice to be used and sets up basic methods
 to operate on the lattice
 '''
 # Typing imports
+import queue
 from typing import Callable, Optional, Union
 from numbers import Number
 from numpy import float64, int64, integer as Int, floating as Float, ndarray, number  # noqa
@@ -17,7 +18,7 @@ from numpy import array
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from sympy import Q
+from sklearn import cluster
 import LinkedLattice as lc
 import DataAnalysis as DA
 import random
@@ -31,7 +32,7 @@ import MLTPQueue as MLTPqueue
 
 from WaitListLock import WaitListLock
 from pyQueue import LLQueue, QueueEmpty
-from pyQueueWithDict import DictQueue
+# from pyQueueWithDict import DictQueue
 
 # from scipy.constants import Boltzmann as k_boltzmann
 
@@ -121,73 +122,17 @@ class LatticeDriver:
             self.EnergyThreadsAlive = False
             # multithreading path declarations
             # TODO must fix C3V, but testing goes on
-            self.cluster_queue = MLTPqueue.ThQueue()
-            self.work_queue_path = MLTPqueue.ThQueue()
-            self.ready_path = WaitListLock()
+            self.result_queue_path = MLTPqueue.ThQueue(self.qsize)
+            self.was_seen = dict()
+            self.cluster_queue = LLQueue()
+            self.work_queue_path = mltp.Queue(0)
+            self.ready_path = WaitListLock[float](self.qsize)
             self.finished_path = mltp.Event()
             self.thread_pool_path: list[mltp.Process] = []
             self.PathThreadsAlive = False
-
-
+            self.cluster = MLTPqueue.ThQueue(0)
         except Exception:
             PE.PrintException()
-
-    def __LaunchSumThreads__(self):
-        for th_num in range(self.qsize):
-            self.thread_pool_sum.append(mltp.Process(
-                target=self.LinkedLat.Sum_Worker,
-                args=(self.LinkedLat.bounds[th_num],
-                      th_num,
-                      self.result_queue_sum,
-                      self.ready_sum,
-                      self.finished_sum)))
-            self.thread_pool_sum[th_num].start()
-        self.SumThreadsAlive = True
-
-    def __LaunchEnergyThreads__(self):
-        for th_num in range(self.qsize):
-            self.thread_pool_energy.append(mltp.Process(
-                target=self.LinkedLat.Energy_Worker,
-                args=(self.LinkedLat.bounds[th_num],
-                      th_num,
-                      self.result_queue_energy,
-                      self.ready_energy,
-                      self.finished_energy)))
-            self.thread_pool_energy[th_num].start()
-        self.EnergyThreadsAlive = True
-
-    def __LaunchPathThreads__(self):
-        for th_num in range(self.qsize):
-            self.thread_pool_path.append(mltp.Process(
-                target=self.LinkedLat.Path_Worker,
-                args=(th_num,
-                      self.
-                      self.ready_energy,
-                      self.finished_energy)))
-            self.thread_pool_energy[th_num].start()
-        self.EnergyThreadsAlive = True
-
-    def __StopSumThreads__(self):
-        if self.SumThreadsAlive is True:
-            self.finished_sum.set()
-            self.ready_sum.Start_Threads()
-            for t in self.thread_pool_sum:
-                t.join()
-        self.thread_pool_sum.clear()
-        # reset events
-        self.finished_sum.clear()
-        self.SumThreadsAlive = False
-
-    def __StopEnergyThreads__(self):
-        if self.EnergyThreadsAlive is True:
-            self.finished_energy.set()
-            self.ready_energy.Start_Threads()
-            for t in self.thread_pool_energy:
-                t.join()
-        self.thread_pool_energy.clear()
-        # reset events
-        self.finished_energy.clear()
-        self.EnergyThreadsAlive = False
 
     def __reformMTX__(self):
         self.ZERO_mtx: ndarray = np.zeros([self.time, 2])
@@ -247,6 +192,81 @@ class LatticeDriver:
         except Exception:
             PE.PrintException()
 
+    def __LaunchSumThreads__(self):
+        for th_num in range(self.qsize):
+            self.thread_pool_sum.append(mltp.Process(
+                target=self.LinkedLat.Sum_Worker,
+                args=(self.LinkedLat.bounds[th_num],
+                      th_num,
+                      self.result_queue_sum,
+                      self.ready_sum,
+                      self.finished_sum)))
+            self.thread_pool_sum[th_num].start()
+        self.SumThreadsAlive = True
+
+    def __LaunchEnergyThreads__(self):
+        for th_num in range(self.qsize):
+            self.thread_pool_energy.append(mltp.Process(
+                target=self.LinkedLat.Energy_Worker,
+                args=(self.LinkedLat.bounds[th_num],
+                      th_num,
+                      self.result_queue_energy,
+                      self.ready_energy,
+                      self.finished_energy)))
+            self.thread_pool_energy[th_num].start()
+        self.EnergyThreadsAlive = True
+
+    def __LaunchPathThreads__(self):
+        for th_num in range(self.qsize):
+            self.thread_pool_path.append(mltp.Process(
+                target=self.LinkedLat.Path_Worker,
+                args=(th_num,
+                      self.cluster,
+                      self.work_queue_path,
+                      self.result_queue_path,
+                      self.was_seen,
+                      self.ready_path,
+                      self.finished_energy)))
+            self.thread_pool_path[th_num].start()
+        self.PathThreadsAlive = True
+
+    def __StopSumThreads__(self):
+        if self.SumThreadsAlive is True:
+            self.finished_sum.set()
+            self.ready_sum.Start_Threads()
+            for t in self.thread_pool_sum:
+                t.join()
+        self.thread_pool_sum.clear()
+        # reset events
+        self.finished_sum.clear()
+        self.SumThreadsAlive = False
+
+    def __StopEnergyThreads__(self):
+        if self.EnergyThreadsAlive is True:
+            self.finished_energy.set()
+            self.ready_energy.Start_Threads()
+            for t in self.thread_pool_energy:
+                t.join()
+        self.thread_pool_energy.clear()
+        # reset events
+        self.finished_energy.clear()
+        self.EnergyThreadsAlive = False
+    
+    def __StopPathThreads__(self):
+        if self.PathThreadsAlive is True:
+            self.finished_path.set()
+            self.ready_path.Start_Threads(0)
+            for t in self.thread_pool_path:
+                # for some reason I cant join the threads, so terminate will
+                # have to do until I figure out why. Probably some dumb
+                # mistake I made elsewhere.
+                # t.join()
+                t.terminate()
+        self.thread_pool_path.clear()
+        # reset events
+        self.finished_path.clear()
+        self.PathThreadsAlive = False
+
     def GetMagnitization(self) -> int64:
         cur_itt_sum = int64(0)
         self.ready_sum.Check()
@@ -262,6 +282,13 @@ class LatticeDriver:
         for j in range(self.qsize):
             cur_itt_energy += self.result_queue_energy.get(block=True)
         return(cur_itt_energy)
+
+    def GetCluster(self, balance_condition) -> None:
+        self.ready_path.Check()
+        self.ready_path.Start_Threads(balance_condition)
+        for i in range(self.qsize):
+            self.result_queue_path.get(block=True)
+        return
 
     def reset(self) -> None:
         for i, node in enumerate(
@@ -334,7 +361,7 @@ class LatticeDriver:
         try:
             if self.SumThreadsAlive is False and relax_call is False:
                 if np.array_equiv(self.ZERO_mtx.shape,
-                              np.array([times, 2])) is False:
+                                  np.array([times, 2])) is False:
                     self.set_time(times)
                 self.__LaunchSumThreads__()
             if initial_energy is not None:
@@ -343,7 +370,7 @@ class LatticeDriver:
                 cur_itt_energy = np.float64(0)
             if spinenergy_call is False:
                 inF.print_stdout(
-                    "MetropolisAlgorithm is 000.0% \complete...")
+                    "MetropolisAlgorithm is 000.0% complete...")
             netSE_mtx = self.ZERO_mtx
             for itt_num in range(times):
                 if spinenergy_call is False:
@@ -385,8 +412,8 @@ class LatticeDriver:
                     netSE_mtx[itt_num, 1] = cur_itt_energy
             # for itt_num in range(times): end
             if spinenergy_call is False:
-                    inF.print_stdout(
-                        f"MetropolisAlgorithm is 100% complete...")
+                inF.print_stdout(
+                    "MetropolisAlgorithm is 100% complete...")
             if spinenergy_call is False:
                 self.__StopSumThreads__()
             if plot is True:
@@ -415,20 +442,18 @@ class LatticeDriver:
         try:
             if self.SumThreadsAlive is False and relax_call is False:
                 if np.array_equiv(self.ZERO_mtx.shape,
-                              np.array([times, 2])) is False:
+                                  np.array([times, 2])) is False:
                     self.set_time(times)
                 self.__LaunchSumThreads__()
+                self.__LaunchPathThreads__()
             if initial_energy is not None:
                 cur_itt_energy = initial_energy
             else:
                 cur_itt_energy = np.float64(0)
             if spinenergy_call is False:
                 inF.print_stdout(
-                    "WolffAlgorithm is 000.0% \complete...")
+                    "WolffAlgorithm is 000.0% complete...")
             netSE_mtx = self.ZERO_mtx
-            node_q = LLQueue[Node]()
-            cluster = LLQueue[Node]()
-            was_seen = dict()
             balcond = 1-np.exp(-2*beta*self.J, dtype=np.float64)
             for itt_num in range(times):
                 if spinenergy_call is False:
@@ -437,7 +462,7 @@ class LatticeDriver:
                         f" complete...")
                 # pick random point
                 while True:
-                    # pick random point on array and flip spin
+                    # pick random point on array
                     # randint is very slow so dont use it when you need to
                     # call it successively, ever please...
                     rand_xy = np.array([math.trunc((random.random()) *
@@ -448,29 +473,25 @@ class LatticeDriver:
                     if rand_node.get_spin() == 0:
                         continue
                     else:
-                        # was_seen.clear()
-                        # was_seen[rand_node] = rand_node
-                        # node_q.push(rand_node)
-                        # break
-                        break 
-                # push neighbors of the random node to the work queue
+                        self.cluster.put(rand_node.get_index())
+                        break
+                # push the random node to the work queue
                 for nbr in rand_node:
-                    if (nbr.get_spin() == 0 or
-                        nbr.get_spin() != rand_node.get_spin()):
-                        continue
-                    self.work_queue_path.put(nbr)
+                    self.work_queue_path.put(nbr.get_index())
+                self.was_seen[rand_node] = rand_node
                 # wait for cluster to be generated
-                self.ready_path.Check()
+                self.GetCluster(balcond)
+                self.was_seen.clear()
                 try:
                     # evaluate energy change path integral
-                    cur = cluster.pop()
+                    cur = self.LinkedLat[self.cluster.get(block=False)]
                     while True:
                         nbr_sum = float64(0)
                         for nbr in cur:
                             nbr_sum += nbr.get_spin()
                         cur_itt_energy += nbr_sum*cur.flip_spin()*self.J
-                        cur = cluster.pop()
-                except QueueEmpty:
+                        cur = self.LinkedLat[self.cluster.get(block=False)]
+                except queue.Empty:
                     # exit while loop when queue is empty
                     pass
                 if relax_call is False:
@@ -479,10 +500,11 @@ class LatticeDriver:
                     netSE_mtx[itt_num, 1] = cur_itt_energy
             # for itt_num in range(times): end
             if spinenergy_call is False:
-                    inF.print_stdout(
-                        f"WolffAlgorithm is 100% complete...")
+                inF.print_stdout(
+                    "WolffAlgorithm is 100% complete...")
             if spinenergy_call is False:
                 self.__StopSumThreads__()
+                self.__StopPathThreads__()
             if plot is True:
                 self.PlotItterations(netSE_mtx, beta, save=False,
                                      auto_plot=True)
@@ -544,7 +566,6 @@ class LatticeDriver:
             # print(f'\nInitial Energy is {initial_energy}')
 
             for i, beta in enumerate(Beta):
-                self.LinkedLat.beta_cur = beta
                 inF.print_stdout(
                     f"get_spin_energy is {100 * i / len(Beta) :.1f}%"
                     f" complete...")
@@ -564,6 +585,7 @@ class LatticeDriver:
             # for i, beta in enumerate(Beta): end
 
             self.__StopSumThreads__()
+            self.__StopPathThreads__()
             end_time = time.time()
             inF.print_stdout(
                 f'get_spin_energy is 100% complete in '
@@ -581,16 +603,17 @@ class LatticeDriver:
             print('\nKeyboard Inturrupt, exiting...\n')
             self.__StopEnergyThreads__()
             self.__StopSumThreads__()
+            self.__StopPathThreads__()
             exit()
         except Exception:
             PE.PrintException()
 
     def PlotItterations(self, SE_mtx: ndarray,
-                       Beta: list | ndarray,
-                       times: Optional[int] = None,
-                       quiet: Optional[bool] = True,
-                       save: Optional[bool] = False,
-                       auto_plot: Optional[bool] = True) -> None:
+                        Beta: list | ndarray,
+                        times: Optional[int] = None,
+                        quiet: Optional[bool] = True,
+                        save: Optional[bool] = False,
+                        auto_plot: Optional[bool] = True) -> None:
         """
         Parameters
         ----------
@@ -687,7 +710,6 @@ class LatticeDriver:
         for i in range(len(Beta)):
             # print(f'E_std[[{i}] = {E_std[i]}')
             Cv[i] = E_std[i]**2 / (k_boltzmann * temps[i]**2)
-
 
         fig.layout.title = (f'Spin energy realtions plot,'
                             f' C{rots}V')

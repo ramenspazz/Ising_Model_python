@@ -18,10 +18,9 @@ from getpass import getpass  # noqa E402
 import random as rnd  # noqa E402
 import DataAnalysis as DA  # noqa E402
 import warnings  # noqa E402
-from SupportingFunctions import generate_random, rand_time
-from scipy.constants import hbar
+from SupportingFunctions import generate_random, rand_time  # noqa E402
 warnings.filterwarnings("ignore", category=SyntaxWarning)
-# sys.setrecursionlimit(1000000)  # increase recursion limit
+# sys.setrecursionlimit(100000000)  # increase recursion limit
 
 
 zeroC = 273.15
@@ -35,7 +34,7 @@ def main(*args, **kwargs) -> int:
         total_time = 1000
         # for some reason I feel this value is smaller than it should be but
         # it is giving me the expected graphs 0_o
-        J = 1  # eV interation energy <=> frequency*h in hz
+        J = 0.01  # eV, interation energy
         T1 = zeroC
         T2 = 100+zeroC
         a = T_to_Beta(T1)
@@ -161,45 +160,6 @@ def main(*args, **kwargs) -> int:
                 b = T_to_Beta(T2)
                 step = (b-a)/num_points
                 Beta = np.arange(a, b, step)
-
-            # lt_c4v_up.__LaunchEnergyThreads__()
-            # init_energy1 = lt_c4v_up.GetEnergy()*J
-            # lt_c4v_up.__StopEnergyThreads__()
-
-            # lt_c3v_up.__LaunchEnergyThreads__()
-            # init_energy2 = lt_c3v_up.GetEnergy()*J
-            # lt_c3v_up.__StopEnergyThreads__()
-
-            # lt_c6v_up.__LaunchEnergyThreads__()
-            # init_energy3 = lt_c6v_up.GetEnergy()*J
-            # lt_c6v_up.__StopEnergyThreads__()
-
-            # lt_c4v_dn.__LaunchEnergyThreads__()
-            # init_energy4 = lt_c4v_dn.GetEnergy()*J
-            # lt_c4v_dn.__StopEnergyThreads__()
-
-            # lt_c3v_dn.__LaunchEnergyThreads__()
-            # init_energy5 = lt_c3v_dn.GetEnergy()*J
-            # lt_c3v_dn.__StopEnergyThreads__()
-
-
-            # lt_c6v_dn.__LaunchEnergyThreads__()
-            # init_energy6 = lt_c6v_dn.GetEnergy()*J
-            # lt_c6v_dn.__StopEnergyThreads__()
-            
-
-            # lt_c4v_up.update(set_state=True)
-            # print(init_energy)
-            # lt_c4v_up.WolffAlgorithm(100000, Beta[0], initial_energy=init_energy,
-            #                          spinenergy_call=False,
-            #                          plot=True)
-            # print('preforming WolffAlgorithm...\n')
-            # inF.print_stdout('Reseting...')
-            # lt_c4v_up.reset()
-            # inF.print_stdout('Reset Complete!', end='\n')
-            # lt_c4v_up.MetropolisAlgorithm(10000, Beta[0], initial_energy=init_energy,
-            #                          spinenergy_call=False,
-            #                          plot=True)
 
             lt_c4v_up.SpinEnergy(Beta, total_time, lt.WolffAlgorithm,
                                  save=auto_save, auto_plot=auto_plot)
