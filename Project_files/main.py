@@ -28,21 +28,21 @@ zeroC = 273.15
 
 def main(*args, **kwargs) -> int:
     try:
-        N = 32
-        M = 32
+        N = 64
+        M = 64
         size = [N, M]
         total_time = 1000
-        # for some reason I feel this value is smaller than it should be but
-        # it is giving me the expected graphs 0_o
         J = 0.01  # eV, interation energy
         T1 = zeroC
-        T2 = 100+zeroC
+        T2 = 101+zeroC
         a = T_to_Beta(T1)
         b = T_to_Beta(T2)
         print(f'a={a}/eV, b={b}/eV')
-        num_points = 10
-        step = (b-a)/num_points
-        Beta = np.arange(a, b, step)
+        num_points = 100
+        step = (T2-T1)/num_points
+        Beta = np.zeros(num_points, dtype=np.float64)
+        for i in range(num_points):
+            Beta[i] = T_to_Beta(i*step + T1)
 
         output = ''
 

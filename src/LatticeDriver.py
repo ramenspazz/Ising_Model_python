@@ -251,7 +251,7 @@ class LatticeDriver:
         # reset events
         self.finished_energy.clear()
         self.EnergyThreadsAlive = False
-    
+
     def __StopPathThreads__(self):
         if self.PathThreadsAlive is True:
             self.finished_path.set()

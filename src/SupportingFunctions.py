@@ -60,11 +60,13 @@ def DividendRemainder(dividend: int | Int,
         Returns
         -------
         [Quotient, Remainder] : `list`
-            - ``list` containing the integer quotient and remainder of division.
+            - ``list` containing the integer quotient and remainder of
+            division.
 
     """
     # Might be necessary but for now doesnt appear to be relavant for my use
-    # case. Included just incase, just uncomment.
+    # case. Included just incase, just uncomment and define MAX_INT and
+    # MIN_INT.
     # if not (MAX_INT > area > MIN_INT):
     #     raise ValueError('Input n and m are too large!')
     if divisor > dividend:
