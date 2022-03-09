@@ -394,30 +394,29 @@ class LinkedLattice:
             ready_energy.Wait(thread_num)
             energy: int64 = 0
             for node in self.range(lower_B, upper_B):
-                psum: int64 = 0
+                nbr_psum: int64 = 0
                 if node.get_spin() == 0:
                     continue
                 for nbr in node:
-                    psum += nbr.get_spin()
-                energy += -psum * node.get_spin()
-            result_queue.put_nowait(energy)
+                    nbr_psum += nbr.get_spin()
+                energy += nbr_psum * node.get_spin()
+            result_queue.put_nowait(-energy/2)
         return
 
     def SpinEnergy_Worker(self,
                           bounds: list | ndarray,
                           thread_num: int,
                           result_queue: MLTPqueue.ThQueue,
-                          ready_energy: WaitListLock,
-                          finished_energy: mltp._EventType) -> int | Int:
+                          ready_SE: WaitListLock,
+                          finished_SE: mltp._EventType) -> int | Int:
         lower_B = bounds[0]
         upper_B = bounds[1]
-        # zero = np.zeros(2, int64)
         while True:
             SE_vec = np.zeros(2, int64)
             psum: int64 = 0
-            if finished_energy.is_set() is True:
+            if finished_SE.is_set() is True:
                 break
-            ready_energy.Wait(thread_num)
+            ready_SE.Wait(thread_num)
             for node in self.range(lower_B, upper_B):
                 if node.get_spin() == 0:
                     continue
@@ -431,7 +430,7 @@ class LinkedLattice:
 
     def Path_Worker(self,
                     thread_num: int,
-                    cluster: MLTPqueue.ThQueue,
+                    cluster: LLQueue,
                     work_queue_path: MLTPqueue.ThQueue,
                     result_queue: MLTPqueue.ThQueue,
                     was_seen: dict[Node, Node],
@@ -444,13 +443,14 @@ class LinkedLattice:
         """
         while True:
             balcond = ready_path.Wait(thread_num)
-
             if finished_path.is_set() is True:
                 break
             while True:
                 # get node from work queue
                 try:
-                    cur = self[work_queue_path.get(block=False, timeout=0.1)]
+                    # If computers get faster, this value might need to be
+                    # tuned, but for 2022 it works just fine on all my devices
+                    cur = self[work_queue_path.get(block=False, timeout=0.01)]
                 except Empty:
                     # break loop when stack is empty or timeout
                     break
@@ -464,7 +464,7 @@ class LinkedLattice:
                         continue
                     was_seen[cur] = cur
                     if random() < balcond:
-                        cluster.put(nbr.get_index())
+                        cluster.push(nbr.get_index())
                         work_queue_path.put(nbr.get_index())
             result_queue.put_nowait(1)
         return
