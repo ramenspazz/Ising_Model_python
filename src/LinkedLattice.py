@@ -446,8 +446,7 @@ class LinkedLattice:
                 break
             while True:
                 try:
-                    cur = self[work_queue_path.get(timeout=0.01)]
-                    # cur.mark_node()
+                    cur = self[work_queue_path.get(timeout=0.001)]
                     cur_Si = cur.get_spin()
                 except Empty:
                     # break loop when stack is empty or timeout
@@ -461,7 +460,7 @@ class LinkedLattice:
                         nbr.mark_node()
                         nbr_index = nbr.get_index()
                         cluster.put_nowait(nbr_index)
-                        work_queue_path.put(nbr_index)
+                        work_queue_path.put_nowait(nbr_index)
             result_queue.put_nowait(1)
         return
 

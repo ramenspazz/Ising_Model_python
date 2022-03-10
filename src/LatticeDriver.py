@@ -573,7 +573,7 @@ class LatticeDriver:
 
                     netSE_mtx[iter_num, 0] = self.GetMagnitization()
                     netSE_mtx[iter_num, 1] = cur_itt_energy
-                    if True:  # iter_num > int(times * 0.6):
+                    if iter_num > int(times * 0.6):
                         # calculate statistics as the data comes in using an
                         # iterative method. With this scheme, we only need to
                         # keep track of the sum up from [0, current iteration],
