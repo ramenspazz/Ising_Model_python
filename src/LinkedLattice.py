@@ -376,6 +376,7 @@ class LinkedLattice:
             if finished_sum.is_set() is True:
                 break
             for node in self.range(lower_B, upper_B):
+                node.unmark_node()
                 psum += node.get_spin()
             result_queue.put_nowait(psum)
         return
@@ -400,7 +401,7 @@ class LinkedLattice:
                 for nbr in node:
                     nbr_psum += nbr.get_spin()
                 energy += nbr_psum * node.get_spin()
-            result_queue.put_nowait(-energy/2)
+            result_queue.put_nowait(energy)
         return
 
     def SpinEnergy_Worker(self,
@@ -418,13 +419,15 @@ class LinkedLattice:
                 break
             ready_SE.Wait(thread_num)
             for node in self.range(lower_B, upper_B):
+                node.unmark_node()
                 if node.get_spin() == 0:
                     continue
                 psum = 0
                 SE_vec[0] += node.get_spin()
                 for nbr in node:
                     psum += nbr.get_spin()
-                SE_vec[1] += -psum * node.get_spin()
+                SE_vec[1] += psum * node.get_spin()
+            SE_vec[1] *= -1
             result_queue.put_nowait(SE_vec)
         return
 
@@ -456,8 +459,8 @@ class LinkedLattice:
                     if (nbr_Si == 0 or nbr_Si != cur_Si or
                             nbr.marked is True):
                         continue
+                    nbr.mark_node()
                     if random() < balcond:
-                        nbr.mark_node()
                         nbr_index = nbr.get_index()
                         cluster.put_nowait(nbr_index)
                         work_queue_path.put_nowait(nbr_index)

@@ -42,11 +42,13 @@ k_boltzmann = float64(8.617333262E-05)  # eV / K
 
 
 def T_to_Beta(beta: float64) -> float64:
-    return(float64(1 / (k_boltzmann * beta)))
+    # return(float64(1 / (k_boltzmann * beta)))
+    return(float64(1 / beta))
 
 
 def Beta_to_T(T: float64) -> float64:
-    return(float64(1 / (k_boltzmann * T)))
+    # return(float64(1 / (k_boltzmann * T)))
+    return(float64(1 / T))
 
 
 class LatticeDriver:
@@ -317,7 +319,7 @@ class LatticeDriver:
         self.ready_energy.Start_Threads()
         for j in range(self.qsize):
             cur_itt_energy += self.result_queue_energy.get(block=True)
-        return(cur_itt_energy)
+        return(-cur_itt_energy)
 
     def GetCluster(self, balance_condition) -> None:
         self.ready_path.Check()
@@ -467,25 +469,23 @@ class LatticeDriver:
                     nbr.mark_node()
             # wait for cluster to be generated
             self.GetCluster(balcond)
-            # self.was_seen.clear()
             try:
                 # evaluate energy change path integral (discrete sum? lol)
-                dE = float64(0)
+                # dE = float64(0)
                 cur = self.LinkedLat[self.cluster_queue.get(block=False)]
                 while True:
-                    S_i = -cur.flip_spin()
-                    cur.unmark_node()
-                    nbr_sum = float64(0)
-                    for nbr in cur:
-                        nbr_sum += nbr.get_spin()
-                    dE += -2*S_i*nbr_sum*self.J
+                    cur.flip_spin()
+                    # nbr_sum = float64(0)
+                    # for nbr in cur:
+                    #     nbr_sum += nbr.get_spin()
+                    # dE += -2*S_i*nbr_sum*self.J
                     cur = self.LinkedLat[self.cluster_queue.get(block=False)]
             except queue.Empty:
                 # exit while loop when queue is empty and end current
                 # Iteration
                 pass
 
-            return(energy+dE)
+            return(energy)
         except Exception:
             PE.PrintException()
 
@@ -524,16 +524,17 @@ class LatticeDriver:
                 plots as they become ready.
         """
         try:
+            # TODO use getspinenergy instead of sum for dubugging
+            # TODO switch back to sum after
             if np.array_equiv(self.ZERO_mtx.shape,
                               np.array([times, 2])) is False:
                 self.set_time(times)
-            if self.SumThreadsAlive is False:
-                self.__LaunchSumThreads__()
+            # if self.SumThreadsAlive is False:
+            #     self.__LaunchSumThreads__()
             netSE_mtx = self.ZERO_mtx.copy()
             if self.SEThreadsAlive is False:
                 self.__LaunchSumEnergyThreads__()
 
-            N = times * len(self)
             M = np.zeros(len(Beta), dtype=float64)
             E = np.zeros(len(Beta), dtype=float64)
             C = np.zeros(len(Beta), dtype=float64)
@@ -544,7 +545,7 @@ class LatticeDriver:
 
             start_time = time.time()
             init_vals = self.GetSpinEnergyVec()
-            self.__StopSEThreads__()
+            # TODO Stop SE Threads goes back here
             initial_spinsum = init_vals[0]
             initial_energy = init_vals[1]*self.J
 
@@ -571,8 +572,8 @@ class LatticeDriver:
                            cur_itt_energy
                         )
 
-                    netSE_mtx[iter_num, 0] = self.GetMagnitization()
-                    netSE_mtx[iter_num, 1] = cur_itt_energy
+                    netSE_mtx[iter_num, :] = self.GetSpinEnergyVec()
+                    # netSE_mtx[iter_num, 1] = cur_itt_energy
                     if iter_num > int(times * 0.6):
                         # calculate statistics as the data comes in using an
                         # iterative method. With this scheme, we only need to
@@ -584,15 +585,19 @@ class LatticeDriver:
                         Es[0] += netSE_mtx[iter_num, 1]
                         Es[1] += netSE_mtx[iter_num, 1]**2
 
-                    M[i] = Ms[0] / N  # the mean magnitization
-                    E[i] = Es[0] / N  # the mean energy
-                    C[i] = ((Es[1]/N - (Es[0]/N)**2) /
-                            (k_boltzmann*Beta_to_T(beta)**2))
-                    X[i] = (Ms[1]/N - (Ms[0]/N)**2)*beta
+                    M[i] = Ms[0] / len(self)  # the mean magnitization
+                    E[i] = Es[0] / len(self)  # the mean energy
+                    # C[i] = ((Es[1]/N - (Es[0]/N)**2) /
+                    #         (k_boltzmann*Beta_to_T(beta)**2))
+                    C[i] = (Es[1]/(len(self)*times) -
+                            Es[0]**2/(times**2*(len(self)-1)))*beta**2
+                    X[i] = (Ms[1]/(len(self)*times) -
+                            Ms[0]**2/(times**2*(len(self)-1)))*beta
                 # for iter_num in range(times): end
             # for i, beta in enumerate(Beta): end
 
-            self.__StopSumThreads__()
+            # self.__StopSumThreads__()
+            self.__StopSEThreads__()
             self.__StopPathThreads__()
             end_time = time.time()
             inF.print_stdout(
