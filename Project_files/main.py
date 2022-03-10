@@ -35,12 +35,12 @@ def main(*args, **kwargs) -> int:
         J = 1  # eV, interation energy
         # T1 = 20085.7+zeroC
         # T2 = 31639+zeroC
-        T1 = 1
+        T1 = zeroC
         T2 = 1000
         a = T_to_Beta(T1)
         b = T_to_Beta(T2)
         print(f'a={a}/eV, b={b}/eV')
-        num_points = 50
+        num_points = 10
         step = (T2-T1)/num_points
         Beta = np.zeros(num_points, dtype=np.float64)
         for i in range(num_points):
@@ -78,7 +78,7 @@ def main(*args, **kwargs) -> int:
                 # DOCtest seed = 1644121893
                 # good seed 1644144314
                 seed = 1644121893
-                lt_c4v_up.randomize(voids=True, probs=[49, 49, 2],
+                lt_c4v_up.randomize(voids=True, probs=[19, 79, 2],
                                     rand_seed=seed)
                 lt_c3v_up.randomize(voids=False, probs=[20, 80],
                                     rand_seed=seed)

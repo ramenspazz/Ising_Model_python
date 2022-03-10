@@ -6,6 +6,7 @@ to operate on the lattice
 '''
 # Typing imports
 from copy import copy
+import queue
 from typing import Callable, Optional, Union
 from numbers import Number
 from numpy import dtype, float64, int64, integer as Int, floating as Float, ndarray, number  # noqa
@@ -18,6 +19,7 @@ from numpy import array
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from pyparsing import Empty
 import LinkedLattice as lc
 import DataAnalysis as DA
 import random
@@ -127,10 +129,9 @@ class LatticeDriver:
             self.SEThreadsAlive = False
             # multithreading path declarations
             # TODO must fix C3V, but testing goes on
+            self.work_queue_path = MLTPqueue.ThQueue()
             self.result_queue_path = MLTPqueue.ThQueue(self.qsize)
-            self.was_seen = dict()
-            self.cluster_queue = LLQueue()
-            self.work_queue_path = mltp.Queue(0)
+            self.cluster_queue = MLTPqueue.ThQueue()
             self.ready_path = WaitListLock[float](self.qsize)
             self.finished_path = mltp.Event()
             self.thread_pool_path: list[mltp.Process] = []
@@ -241,7 +242,6 @@ class LatticeDriver:
                       self.cluster_queue,
                       self.work_queue_path,
                       self.result_queue_path,
-                      self.was_seen,
                       self.ready_path,
                       self.finished_energy)))
             self.thread_pool_path[th_num].start()
@@ -412,15 +412,13 @@ class LatticeDriver:
                 if neighbor.get_spin() == 0:
                     continue
                 nbrs_Energy += neighbor.get_spin()
-            dE = 2 * S_i * nbrs_Energy * self.J
+            dE = -2*S_i*nbrs_Energy*self.J
             if dE > 0 and random.random() < np.exp(-beta*dE):
-                energy += dE
                 node_i.flip_spin()
             if dE <= 0:
-                energy += dE
                 node_i.flip_spin()
 
-            return(energy)
+            return(energy+dE)
         except KeyboardInterrupt:
             print('\nKeyboard Inturrupt, exiting...\n')
             self.__StopEnergyThreads__()
@@ -444,12 +442,12 @@ class LatticeDriver:
             if self.PathThreadsAlive is False:
                 self.__LaunchPathThreads__()
 
-            balcond = 1-np.exp(2*beta*self.J, dtype=np.float64)
+            balcond = 1-np.exp(-2*beta*self.J, dtype=np.float64)
 
             # pick random point
             while True:
                 # pick random point on array
-                # randint is very slow so dont use it when you need to
+                # randint is very slow so don't use it when you need to
                 # call it successively, ever please...
                 rand_xy = np.array([math.trunc((random.random()) *
                                     (self.Lshape[0] - 1)),
@@ -459,32 +457,35 @@ class LatticeDriver:
                 if rand_node.get_spin() == 0:
                     continue
                 else:
-                    self.cluster_queue.push(rand_node.get_index())
-                    self.was_seen[rand_node] = rand_node
+                    self.cluster_queue.put(rand_node.get_index())
+                    rand_node.mark_node()
                     break
             # push the random node to the work queue
             for nbr in rand_node:
                 if nbr.get_spin() == rand_node.get_spin():
                     self.work_queue_path.put(nbr.get_index())
-                    self.was_seen[nbr] = nbr
+                    nbr.mark_node()
             # wait for cluster to be generated
             self.GetCluster(balcond)
-            self.was_seen.clear()
+            # self.was_seen.clear()
             try:
                 # evaluate energy change path integral (discrete sum? lol)
-                cur = self.LinkedLat[self.cluster_queue.pop()]
+                dE = float64(0)
+                cur = self.LinkedLat[self.cluster_queue.get(block=False)]
                 while True:
+                    S_i = -cur.flip_spin()
+                    cur.unmark_node()
                     nbr_sum = float64(0)
                     for nbr in cur:
                         nbr_sum += nbr.get_spin()
-                    energy += nbr_sum*cur.flip_spin()*self.J
-                    cur = self.LinkedLat[self.cluster_queue.pop()]
-            except QueueEmpty:
+                    dE += -2*S_i*nbr_sum*self.J
+                    cur = self.LinkedLat[self.cluster_queue.get(block=False)]
+            except queue.Empty:
                 # exit while loop when queue is empty and end current
                 # Iteration
                 pass
 
-            return(energy)
+            return(energy+dE)
         except Exception:
             PE.PrintException()
 
@@ -572,7 +573,7 @@ class LatticeDriver:
 
                     netSE_mtx[iter_num, 0] = self.GetMagnitization()
                     netSE_mtx[iter_num, 1] = cur_itt_energy
-                    if iter_num > int(times * 0.6):
+                    if True:  # iter_num > int(times * 0.6):
                         # calculate statistics as the data comes in using an
                         # iterative method. With this scheme, we only need to
                         # keep track of the sum up from [0, current iteration],
@@ -585,7 +586,8 @@ class LatticeDriver:
 
                     M[i] = Ms[0] / N  # the mean magnitization
                     E[i] = Es[0] / N  # the mean energy
-                    C[i] = (Es[1]/N - (Es[0]/N)**2)*beta**2
+                    C[i] = ((Es[1]/N - (Es[0]/N)**2) /
+                            (k_boltzmann*Beta_to_T(beta)**2))
                     X[i] = (Ms[1]/N - (Ms[0]/N)**2)*beta
                 # for iter_num in range(times): end
             # for i, beta in enumerate(Beta): end

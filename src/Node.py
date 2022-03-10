@@ -54,6 +54,7 @@ class Node:
             elif combination is None:
                 self.combination: NDArray[Int] = None
             self.coords: NDArray[Float] = np.array(coords)
+            self.marked: bool = False
             self.links = list()
         except Exception:
             PE.PrintException()
@@ -171,6 +172,12 @@ class Node:
                 return(1)
         except Exception:
             PE.PrintException()
+
+    def mark_node(self):
+        self.marked = True
+
+    def unmark_node(self):
+        self.marked = False
 
     def flip_test(self) -> int:
         try:

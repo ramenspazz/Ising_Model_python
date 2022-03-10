@@ -430,10 +430,9 @@ class LinkedLattice:
 
     def Path_Worker(self,
                     thread_num: int,
-                    cluster: LLQueue,
+                    cluster: MLTPqueue.ThQueue,
                     work_queue_path: MLTPqueue.ThQueue,
                     result_queue: MLTPqueue.ThQueue,
-                    was_seen: dict[Node, Node],
                     ready_path: WaitListLock[float],
                     finished_path: mltp._EventType):
         """
@@ -446,26 +445,23 @@ class LinkedLattice:
             if finished_path.is_set() is True:
                 break
             while True:
-                # get node from work queue
                 try:
-                    # If computers get faster, this value might need to be
-                    # tuned, but for 2022 it works just fine on all my devices
-                    cur = self[work_queue_path.get(block=False, timeout=0.01)]
+                    cur = self[work_queue_path.get(timeout=0.01)]
+                    # cur.mark_node()
+                    cur_Si = cur.get_spin()
                 except Empty:
                     # break loop when stack is empty or timeout
                     break
                 for nbr in cur:
-                    if (nbr.get_spin() != cur.get_spin() or
-                            nbr.get_spin() == 0) or (
-                            was_seen.get(cur) is not None):
-                        # skip to next neighbor if the current neighbor is a
-                        # void or has the opposite sign of spin, or was
-                        # previously processed in the was_seen dict.
+                    nbr_Si = nbr.get_spin()
+                    if (nbr_Si == 0 or nbr_Si != cur_Si or
+                            nbr.marked is True):
                         continue
-                    was_seen[cur] = cur
                     if random() < balcond:
-                        cluster.push(nbr.get_index())
-                        work_queue_path.put(nbr.get_index())
+                        nbr.mark_node()
+                        nbr_index = nbr.get_index()
+                        cluster.put_nowait(nbr_index)
+                        work_queue_path.put(nbr_index)
             result_queue.put_nowait(1)
         return
 
