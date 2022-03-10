@@ -1,4 +1,4 @@
-# Note
+# The most important Note
 > C++23 > Python... remade this in C++ and its almost two orders of magnitude faster. I did spend many hours profiling and optomizing the crap out of this and even rewrote a few things from scratch, so I recommend anyone who wants preformance to do the same. This is a decent refrence for doing so, but please cite me!
 
 # Project Brief

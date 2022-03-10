@@ -4,8 +4,7 @@ from multiprocessing import RLock
 from threading import Lock
 from time import time
 from typing import Optional, TypeVar, Generic, TypedDict
-import gc
-gc.disable()
+
 T = TypeVar('T')
 
 
@@ -65,12 +64,6 @@ class DictData(TypedDict):
     data: T
 
 
-# The commented out lines are for the Wolff algorithm to run with spin
-# flipping of entire groups of LIKE spins only. This was a test case and
-# required me to check if a node was already in the queue or not.
-# Left in just in case anyone else needs this functionality at a very small
-# speed penelty. In my tests, calling IsInQueue only added (0.3 +/- 0.05)s per
-# 1000 itterations of the Wolff algorithm
 class LLQueue(Generic[T]):
     """
         A queue made from a linked list, operates on first in first out
@@ -120,7 +113,6 @@ class LLQueue(Generic[T]):
                 self.tail.set_fore_link(new_node)
                 self.tail = new_node
                 self.size += 1
-        # print(f'size of {self} is now {self.size}')
 
     def pop(self, timeout: Optional[float] = 0) -> T:
         """

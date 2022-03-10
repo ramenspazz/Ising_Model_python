@@ -376,6 +376,7 @@ class LinkedLattice:
             if finished_sum.is_set() is True:
                 break
             for node in self.range(lower_B, upper_B):
+                node.unmark_node()
                 psum += node.get_spin()
             result_queue.put_nowait(psum)
         return
@@ -394,12 +395,12 @@ class LinkedLattice:
             ready_energy.Wait(thread_num)
             energy: int64 = 0
             for node in self.range(lower_B, upper_B):
-                psum: int64 = 0
+                nbr_psum: int64 = 0
                 if node.get_spin() == 0:
                     continue
                 for nbr in node:
-                    psum += nbr.get_spin()
-                energy += -psum * node.get_spin()
+                    nbr_psum += nbr.get_spin()
+                energy += nbr_psum * node.get_spin()
             result_queue.put_nowait(energy)
         return
 
@@ -407,25 +408,26 @@ class LinkedLattice:
                           bounds: list | ndarray,
                           thread_num: int,
                           result_queue: MLTPqueue.ThQueue,
-                          ready_energy: WaitListLock,
-                          finished_energy: mltp._EventType) -> int | Int:
+                          ready_SE: WaitListLock,
+                          finished_SE: mltp._EventType) -> int | Int:
         lower_B = bounds[0]
         upper_B = bounds[1]
-        # zero = np.zeros(2, int64)
         while True:
             SE_vec = np.zeros(2, int64)
             psum: int64 = 0
-            if finished_energy.is_set() is True:
+            if finished_SE.is_set() is True:
                 break
-            ready_energy.Wait(thread_num)
+            ready_SE.Wait(thread_num)
             for node in self.range(lower_B, upper_B):
+                node.unmark_node()
                 if node.get_spin() == 0:
                     continue
                 psum = 0
                 SE_vec[0] += node.get_spin()
                 for nbr in node:
                     psum += nbr.get_spin()
-                SE_vec[1] += -psum * node.get_spin()
+                SE_vec[1] += psum * node.get_spin()
+            SE_vec[1] *= -1
             result_queue.put_nowait(SE_vec)
         return
 
@@ -434,7 +436,6 @@ class LinkedLattice:
                     cluster: MLTPqueue.ThQueue,
                     work_queue_path: MLTPqueue.ThQueue,
                     result_queue: MLTPqueue.ThQueue,
-                    was_seen: dict[Node, Node],
                     ready_path: WaitListLock[float],
                     finished_path: mltp._EventType):
         """
@@ -444,28 +445,25 @@ class LinkedLattice:
         """
         while True:
             balcond = ready_path.Wait(thread_num)
-
             if finished_path.is_set() is True:
                 break
             while True:
-                # get node from work queue
                 try:
-                    cur = self[work_queue_path.get(block=False, timeout=0.1)]
+                    cur = self[work_queue_path.get(timeout=0.001)]
+                    cur_Si = cur.get_spin()
                 except Empty:
                     # break loop when stack is empty or timeout
                     break
                 for nbr in cur:
-                    if (nbr.get_spin() != cur.get_spin() or
-                            nbr.get_spin() == 0) or (
-                            was_seen.get(cur) is not None):
-                        # skip to next neighbor if the current neighbor is a
-                        # void or has the opposite sign of spin, or was
-                        # previously processed in the was_seen dict.
+                    nbr_Si = nbr.get_spin()
+                    if (nbr_Si == 0 or nbr_Si != cur_Si or
+                            nbr.marked is True):
                         continue
-                    was_seen[cur] = cur
+                    nbr.mark_node()
                     if random() < balcond:
-                        cluster.put(nbr.get_index())
-                        work_queue_path.put(nbr.get_index())
+                        nbr_index = nbr.get_index()
+                        cluster.put_nowait(nbr_index)
+                        work_queue_path.put_nowait(nbr_index)
             result_queue.put_nowait(1)
         return
 
