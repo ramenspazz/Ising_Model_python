@@ -1,7 +1,5 @@
 # Project Brief
-This is a program written in pure python that simulates the Ising model of atomic spins. The Ising model of spins is a simple, but powerful model that displays the basics of phase transitions with temperature. My model also supports the natural crystal symmetries of C3V, C4V and C6V with voids in the lattice.
-
-Currently C3V needs to be cleaned up in its generation method, but does currenty work.
+This is a program written in pure python that simulates the Ising model of atomic spins. This is a mockup of the rust solution I have working, posted here https://github.com/ramenspazz/Ising_model_rust.
 
 # Python version required: 3.10.0+
 If at anytime you want to know what python version something will run with, on any operating system, run the command ```python --version``` in your powershell/cmd/terminal to print out the version of python that will be used for all calls to ```python``` on your system path.
